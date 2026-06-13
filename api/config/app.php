@@ -123,4 +123,10 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'per_page' => env('APP_PER_PAGE', 50),
+    'max_channels_per_user' => env('APP_MAX_CHANNELS_PER_USER', 10),
+    'max_profile_picture_per_user' => env('APP_MAX_PROFILE_PICTURE_PER_USER', 10),
+    'max_profile_picture_per_channel' => env('APP_MAX_PROFILE_PICTURE_PER_CHANNEL', 1),
+    'profiles_pagination_limit' => env('APP_PROFILES_PAGINATION_LIMIT', 30),
+
 ];

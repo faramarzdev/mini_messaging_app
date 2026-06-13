@@ -2,16 +2,17 @@
 
 namespace App\Http\Requests;
 
+use App\Validation\Rules\ProfileRules;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreChatRequest extends FormRequest
+class UpdateProfileRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +22,8 @@ class StoreChatRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            //
-        ];
+        $profile = $this->route('profile'); // returns the bound Profile model
+
+        return ProfileRules::update($profile->id);
     }
 }

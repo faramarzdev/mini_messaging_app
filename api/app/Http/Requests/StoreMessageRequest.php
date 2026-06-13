@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Message;
+use App\Models\MessageMedia;
+use App\Models\Profile;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMessageRequest extends FormRequest
 {
@@ -11,7 +15,7 @@ class StoreMessageRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +26,20 @@ class StoreMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'receiver_id' => [
+                'required',
+                Rule::exists(Profile::class, 'id'),
+            ],
+            'body' => ['required', 'string', 'min:3', 'max:2047'],
+            'medias' => ['sometimes', 'array'],
+            'medias.*' => [
+                'sometimes',
+                Rule::exists(MessageMedia::class, 'uuid'),
+            ],
+            'reply_id' => [
+                'nullable',
+                Rule::exists(Message::class),
+            ],
         ];
     }
 }

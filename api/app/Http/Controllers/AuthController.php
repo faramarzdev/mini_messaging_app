@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AuthLoginRequest;
+use App\Http\Requests\AuthRegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Mail\WelcomeEmail;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -13,19 +16,15 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(AuthRegisterRequest $request): JsonResponse
     {
         $canRegister = env('APP_CAN_REGISTER', false);
-        if(!$canRegister){
+        if (! $canRegister) {
             throw ValidationException::withMessages([
                 'general' => ['Registration is currently closed.'],
             ]);
         }
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',  // ← Add confirmed rule!
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
             'name' => $validated['name'],
@@ -39,15 +38,12 @@ class AuthController extends Controller
         return response()->json([
             'user' => new UserResource($user),
             'token' => $token,
-        ], Response::HTTP_CREATED);  // ← 201 for creation
+        ], Response::HTTP_CREATED);
     }
 
-    public function login(Request $request)
+    public function login(AuthLoginRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $validated = $request->validated();
 
         $user = User::where('email', $validated['email'])->first();
 
@@ -65,7 +61,7 @@ class AuthController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
@@ -74,7 +70,7 @@ class AuthController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function me(Request $request)
+    public function me(Request $request): JsonResponse
     {
         return response()->json([
             'user' => new UserResource($request->user()),

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\ProfileableTypes;
 use App\Models\Concerns\HasRole;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -34,7 +37,8 @@ class User extends Authenticatable
         ];
     }
 
-    public function scopeSearchFor($query, $keyword)
+    #[Scope]
+    public function searchFor($query, $keyword)
     {
         if ($keyword) {
             $query->where(function ($query) use ($keyword) {
@@ -46,7 +50,8 @@ class User extends Authenticatable
         return $query;
     }
 
-    public function scopeFilterByRole($query, $role)
+    #[Scope]
+    public function filterByRole($query, $role)
     {
         if ($role && in_array($role, ['admin', 'editor', 'user'])) {
             $query->where('role', $role);
@@ -55,4 +60,30 @@ class User extends Authenticatable
         return $query;
     }
 
+    public function ownChannels(): HasMany
+    {
+        return $this->hasMany(Channel::class, 'owner_id');
+    }
+
+    public function profile(): MorphOne
+    {
+        return $this->morphOne(Profile::class, 'profileable');
+    }
+
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        static::created(function ($user) {
+            Profile::create([
+                'profileable_id' => $user->id,
+                'profileable_type' => ProfileableTypes::User,
+            ]);
+        });
+    }
+
+    public function isLimited()
+    {
+        return false; // todo: implement limitation on user for prevent spamming!
+    }
 }

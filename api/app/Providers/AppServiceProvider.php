@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Profile;
+use App\Observers\ProfileObserver;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -13,12 +15,17 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        Request::macro('currentProfile', function (): Profile {
+            /** @var Request $this */
+            return $this->user()->profile;
+        });
     }
 
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        Profile::observe(ProfileObserver::class);
 
         // Default API rate limiter (required for throttleApi())
         RateLimiter::for('api', function (Request $request) {
@@ -37,5 +44,10 @@ class AppServiceProvider extends ServiceProvider
                 });
         });
 
+        Relation::enforceMorphMap([
+            'user' => \App\Models\User::class,
+            'channel' => \App\Models\Channel::class,
+            'conversation' => \App\Models\Conversation::class,
+        ]);
     }
 }
