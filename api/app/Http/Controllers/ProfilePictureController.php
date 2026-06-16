@@ -7,17 +7,13 @@ use App\Http\Requests\StoreProfilePictureRequest;
 use App\Http\Resources\ProfilePictureResource;
 use App\Models\Profile;
 use App\Models\ProfilePicture;
-use Illuminate\Http\Request;
+use App\Services\ProfilePictureService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\ImageManager;
 
 class ProfilePictureController extends Controller
 {
-    public function store(Profile $profile, StoreProfilePictureRequest $request)
+    public function store(Profile $profile, StoreProfilePictureRequest $request, ProfilePictureService $profilePictureService)
     {
         $this->authorize('create', [ProfilePicture::class, $profile]);
         if ($profile->profileable_type === ProfileableTypes::User->value) {
@@ -40,33 +36,18 @@ class ProfilePictureController extends Controller
 
         $validated = $request->validated();
 
-        //        $manager = new ImageManager(Driver::class);
-        $manager = ImageManager::gd(); // Use GD driver
+        $picture = $profilePictureService->store($profile, $request->file('image'));
 
-        $image = $manager->read($request->file('image'));
-        $image->cover(640, 640); // Crop and resize to 640x640
-
-        $encoded = (string) $image->toWebp(85); // Encode to WebP at 85% quality
-
-        $uuid = Str::uuid();
-        $date = date('Y/m/');
-        $path = "{$date}{$uuid}.webp";
-        dd($path);
-
-        Storage::disk('profile_pictures')->put($path, $encoded);
-
-        $profile = ProfilePicture::create([
-            'uuid' => $uuid,
-            'profile_id' => $profile->id,
-            'path' => $path,
-            'original_name' => $request->file('image')->getClientOriginalName(),
-            'mime_type' => 'image/webp',
-            'file_size' => strlen($encoded),
-        ]);
-
-        return response()->json(new ProfilePictureResource($profile), Response::HTTP_CREATED);
+        return response()->json(new ProfilePictureResource($picture), Response::HTTP_CREATED);
 
     }
 
-    public function destroy(Request $request) {}
+    public function destroy(ProfilePicture $profilePicture)
+    {
+        $this->authorize('delete', [ProfilePicture::class, $profilePicture]);
+
+        $profilePicture->delete(); // model will attempt to remove the actual file
+
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
 }

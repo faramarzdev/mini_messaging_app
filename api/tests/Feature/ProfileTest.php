@@ -28,7 +28,7 @@ class ProfileTest extends TestCase
         $user = User::factory()->create();
         $this->assertDatabaseHas('profiles', [
             'profileable_id' => $user->id,
-            'profileable_type' => ProfileableTypes::User,
+            'profileable_type' => ProfileableTypes::User->value,
         ]);
         $this->assertDatabaseCount(Profile::class, 1);
     }
@@ -60,7 +60,7 @@ class ProfileTest extends TestCase
 
         $this->assertDatabaseHas(Profile::class, [
             'profileable_id' => $channel['id'],
-            'profileable_type' => ProfileableTypes::Channel,
+            'profileable_type' => ProfileableTypes::Channel->value,
         ]);
         $this->assertDatabaseCount(Profile::class, 2);
     }
@@ -154,6 +154,8 @@ class ProfileTest extends TestCase
     //    }
     //
 
+    // todo: implement the index for search and listings
+
     #[Test]
     public function user_can_upload_own_profile_picture()
     {
@@ -174,9 +176,162 @@ class ProfileTest extends TestCase
             'original_name' => 'test_pp.jpg',
         ]);
         Storage::disk('profile_pictures')->assertExists($response->json('path'));
+    }
+
+    #[Test]
+    public function user_can_remove_own_profile_picture()
+    {
+        // upload
+        $user = User::factory()->create();
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $user->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(ProfilePicture::class, [
+            'profile_id' => $user->profile->id,
+            'original_name' => 'test_pp.jpg',
+        ]);
+        Storage::disk('profile_pictures')->assertExists($response->json('path'));
+
+        // remove
+        $removalResponse = $this->actingAs($user, 'sanctum')
+            ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $response->json('uuid')]), [
+                'image' => $file,
+            ]);
+        $removalResponse->assertStatus(Response::HTTP_NO_CONTENT);
+
+        Storage::disk('profile_pictures')->assertMissing($response->json('path'));
 
     }
 
-    // todo: implement the index for search and listings
+    #[Test]
+    public function user_cannot_remove_others_profile_picture()
+    {
+        // upload
+        $user = User::factory()->create();
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $user->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(ProfilePicture::class, [
+            'profile_id' => $user->profile->id,
+            'original_name' => 'test_pp.jpg',
+        ]);
+        Storage::disk('profile_pictures')->assertExists($response->json('path'));
+
+        // remove
+        $impersonator = User::factory()->create();
+        $removalResponse = $this->actingAs($impersonator, 'sanctum')
+            ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $response->json('uuid')]), [
+                'image' => $file,
+            ]);
+        $removalResponse->assertStatus(Response::HTTP_FORBIDDEN);
+        Storage::disk('profile_pictures')->assertExists($response->json('path'));
+    }
+
+    #[Test]
+    public function channel_profile_picture_can_be_set_by_managements()
+    {
+        $channelsOwner = User::factory()->create();
+        $channelService = new ChannelService;
+        $channel = $channelService->createChannel([
+            'name' => 'Channel Name',
+        ], $channelsOwner);
+
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
+
+        $response = $this->actingAs($channelsOwner, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $channel->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(ProfilePicture::class, [
+            'profile_id' => $channel->profile->id,
+        ]);
+        Storage::disk('profile_pictures')->assertExists($response->json('path'));
+    }
+
+    #[Test]
+    public function members_cannot_set_profile_picture_for_channel()
+    {
+        $channelsOwner = User::factory()->create();
+        $channelService = new ChannelService;
+        $channel = $channelService->createChannel([
+            'name' => 'Channel Name',
+        ], $channelsOwner);
+
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
+
+        $impersonator = User::factory()->create();
+        $response = $this->actingAs($impersonator, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $channel->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_FORBIDDEN);
+
+        $this->assertDatabaseMissing(ProfilePicture::class, [
+            'profile_id' => $channel->profile->id,
+        ]);
+    }
+
+    #[Test]
+    public function user_cannot_upload_profile_picture_when_limit_exceeded()
+    {
+        $user = User::factory()->create();
+
+        ProfilePicture::factory()
+            ->count(config('app.max_profile_picture_per_user'))
+            ->create(['profile_id' => $user->profile->id]);
+
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $user->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_NOT_ACCEPTABLE);
+    }
+
+    #[Test]
+    public function cannot_upload_profile_picture_when_limit_exceeded_channel()
+    {
+        $channelsOwner = User::factory()->create();
+        $channelService = new ChannelService;
+        $channel = $channelService->createChannel([
+            'name' => 'Channel Name',
+        ], $channelsOwner);
+
+        ProfilePicture::factory()
+            ->count(config('app.max_profile_picture_per_channel'))
+            ->create(['profile_id' => $channel->profile->id]);
+
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
+
+        $response = $this->actingAs($channelsOwner, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $channel->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_NOT_ACCEPTABLE);
+    }
 }

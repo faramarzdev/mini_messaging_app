@@ -30,7 +30,7 @@ Route::prefix('v1')->group(function () {
         Route::put('p/{profile}', [ProfileController::class, 'update'])->where(['profile' => '[0-9_]+'])->name('profile.update');
 
         Route::post('p/{profile:handle}/pictures', [ProfilePictureController::class, 'store'])->where(['profile' => '[a-z0-9_]+'])->name('profile.picture.store');
-        Route::delete('p/{profile:handle}/pictures', [ProfilePictureController::class, 'destroy'])->where(['profile' => '[a-z0-9_]+'])->name('profile.picture.destroy');
+        Route::delete('p/pictures/{profile_picture:uuid}', [ProfilePictureController::class, 'destroy'])->name('profile.picture.destroy');
 
         Route::get('p/{profile:handle}/messages', [MessageController::class, 'index'])->where(['profile' => '[a-z0-9_]+'])->name('profile.messages.index');
 
