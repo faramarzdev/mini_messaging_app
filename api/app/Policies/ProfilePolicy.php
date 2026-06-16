@@ -53,7 +53,7 @@ class ProfilePolicy
             $profileInChannel = ChannelMember::where('channel_id', $channel->id)->where('profile_id', $userProfile->id)->first();
             if ($profileInChannel) {
                 $userRole = $profileInChannel->role;
-                if (in_array($userRole, [ChannelRoles::Owner, ChannelRoles::Admin])) {
+                if (in_array($userRole, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
                     return true;
                 }
             }

@@ -25,7 +25,7 @@ return new class extends Migration
             $table->boolean('is_available_on_receiver')->default(true);
 
             $table->text('body')->nullable();
-            $table->enum('type', MessageType::cases())->default(MessageType::Text);
+            $table->enum('type', MessageType::cases())->default(MessageType::Text->value);
 
             $table->boolean('is_read')->default(0);
 

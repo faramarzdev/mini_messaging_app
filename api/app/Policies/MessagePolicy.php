@@ -43,7 +43,7 @@ class MessagePolicy
         } elseif ($message->messageable_type === MessageableType::Channel->value) {
             $channel = Channel::where('id', $message->messageable_id)->first();
             if ($channel) {
-                if ($channel->visibility == ChannelVisibility::Public) {
+                if ($channel->visibility == ChannelVisibility::Public->value) {
                     return true;
                 } elseif (in_array($profileId, $channel->members->pluck('id')->toArray())) {
                     return true;
@@ -64,7 +64,7 @@ class MessagePolicy
         if ($profile->profileable_type === ProfileableTypes::User->value) {
             return true; // user can
         } elseif ($profile->profileable_type === ProfileableTypes::Channel->value) {
-            if ($profile->profileable->visibility == ChannelVisibility::Public) {
+            if ($profile->profileable->visibility == ChannelVisibility::Public->value) {
                 return true;
             } elseif ($profile->profileable->profileRole()) {
                 return true;
@@ -125,7 +125,7 @@ class MessagePolicy
             $profileInChannel = ChannelMember::where('channel_id', $message->messageable_id)->where('profile_id', $profileId)->first();
             if ($profileInChannel) {
                 $userRole = $profileInChannel->role;
-                if (in_array($userRole, [ChannelRoles::Owner, ChannelRoles::Admin])) {
+                if (in_array($userRole, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
                     return true;
                 }
             }

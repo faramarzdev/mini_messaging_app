@@ -59,7 +59,7 @@ class ConversationTest extends TestCase
     {
         $user = User::factory()->create();
         // user creation must make the profile
-        $profile = Profile::where('profileable_type', ProfileableTypes::User)
+        $profile = Profile::where('profileable_type', ProfileableTypes::User->value)
             ->where('profileable_id', $user->id)->first();
 
         Conversation::factory(60)->create([
@@ -84,7 +84,7 @@ class ConversationTest extends TestCase
         $user = User::factory()->create();
         // user creation must make the profile
 
-        $profile = Profile::where('profileable_type', ProfileableTypes::User)
+        $profile = Profile::where('profileable_type', ProfileableTypes::User->value)
             ->where('profileable_id', $user->id)->first();
 
         Conversation::factory(1)->create([

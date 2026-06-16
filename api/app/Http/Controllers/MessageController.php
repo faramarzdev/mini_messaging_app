@@ -75,7 +75,7 @@ class MessageController extends Controller
             $message = DB::transaction(function () use ($profile, $messageable, $validated, $conversation) {
                 // todo: prepare and add media when uploaded
                 //      also the type of the message
-                $type = MessageType::Text;
+                $type = MessageType::Text->value;
                 $body = $validated['body'];
                 $reply_id = $validated['reply_id'] ?? null;
 

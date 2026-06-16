@@ -23,9 +23,9 @@ return new class extends Migration
             $table->string('description', 255)->nullable()->default(null);
 
             // type:       channel or group
-            $table->enum('type', ChannelType::cases())->default(ChannelType::Channel);
+            $table->enum('type', ChannelType::cases())->default(ChannelType::Channel->value);
             // visibility: private or public
-            $table->enum('visibility', ChannelVisibility::cases())->default(ChannelVisibility::Private);
+            $table->enum('visibility', ChannelVisibility::cases())->default(ChannelVisibility::Private->value);
 
             $table->boolean('can_join_by_link')->default(false);
             $table->boolean('confirm_joined')->default(false);

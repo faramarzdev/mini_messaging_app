@@ -48,7 +48,7 @@ class ChannelTest extends TestCase
 
         $this->assertDatabaseHas(Profile::class, [
             'profileable_id' => $channel['id'],
-            'profileable_type' => ProfileableTypes::Channel,
+            'profileable_type' => ProfileableTypes::Channel->value,
 
             'handle' => 'test_channel',
 

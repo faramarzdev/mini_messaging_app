@@ -22,7 +22,7 @@ class ChannelPolicy
     public function view(?User $user, Channel $channel): bool
     {
 
-        if ($channel->visibility === ChannelVisibility::Public) {
+        if ($channel->visibility === ChannelVisibility::Public->value) {
             return true;
         }
         if ($user) {

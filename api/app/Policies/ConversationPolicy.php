@@ -31,25 +31,6 @@ class ConversationPolicy
             return true;
         }
 
-        /* $channelProfile = false;
-        // todo: remove it!! the conversation can only contain user (profile) to user , channel have direct message (messageable)
-        if($conversation->lowerProfile?->profileable_type === ProfileableTypes::Channel){
-            $channelProfile = $conversation->lowerProfile;
-        }elseif($conversation->higherProfile?->profileable_type === ProfileableTypes::Channel){
-            $channelProfile = $conversation->higherProfile;
-        }
-
-        if ($channelProfile) {
-            $channel = Channel::where('id', $channelProfile->profileable_id)->firstOrFail();
-            if ($channel) {
-                if ($channel->type == ChannelVisibility::Public) {
-                    return true;
-                } elseif (in_array($profileId, $channel->members)) {
-                    return true;
-                }
-            }
-        } */
-
         return false;
     }
 

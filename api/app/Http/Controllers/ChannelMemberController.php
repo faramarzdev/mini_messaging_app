@@ -37,7 +37,7 @@ class ChannelMemberController extends Controller
         if ($channel->confirm_joined) {
             $status = ChannelMemberStatus::Pending->value;
         } else {
-            if ($channel->visibility === ChannelVisibility::Public) {
+            if ($channel->visibility === ChannelVisibility::Public->value) {
                 $status = ChannelMemberStatus::Approved->value;
             } else {
                 $status = ChannelMemberStatus::Pending->value;

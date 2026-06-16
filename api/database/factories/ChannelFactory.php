@@ -22,8 +22,8 @@ class ChannelFactory extends Factory
         return [
             'owner_id' => User::factory(),
             'name' => fake()->name(),
-            'visibility' => ChannelVisibility::Public,
-            'type' => ChannelType::Channel,
+            'visibility' => ChannelVisibility::Public->value,
+            'type' => ChannelType::Channel->value,
         ];
     }
 }

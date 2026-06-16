@@ -41,8 +41,8 @@ class ProfileTest extends TestCase
 
         $channelData = [
             'name' => 'tests',
-            'visibility' => ChannelVisibility::Public,
-            'type' => ChannelType::Channel,
+            'visibility' => ChannelVisibility::Public->value,
+            'type' => ChannelType::Channel->value,
             'can_join_by_link' => 1,
             'confirm_joined' => 0,
         ];

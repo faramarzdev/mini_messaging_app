@@ -44,7 +44,7 @@ class Profile extends Model
 
     public function isChannel(): bool
     {
-        return $this->profileable_type === ProfileableTypes::Channel;
+        return $this->profileable_type === ProfileableTypes::Channel->value;
     }
 
     public function scopeSearchFor($query, $keyword)

@@ -31,7 +31,7 @@ class ChannelService
             // 2. Create the channel's profile
             $profileToCreate = [
                 'profileable_id' => $channel->id,
-                'profileable_type' => ProfileableTypes::Channel,
+                'profileable_type' => ProfileableTypes::Channel->value,
             ];
             if (isset($validatedData['handle'])) {
                 $profileToCreate['handle'] = $validatedData['handle'];
@@ -72,7 +72,7 @@ class ChannelService
                 ->delete();
 
             // delete the associated Profile
-            Profile::where('profileable_id', $channel->id)->where('profileable_type', ProfileableTypes::Channel)->delete();
+            Profile::where('profileable_id', $channel->id)->where('profileable_type', ProfileableTypes::Channel->value)->delete();
 
             // delete the associated Profile
             return $channel->delete();

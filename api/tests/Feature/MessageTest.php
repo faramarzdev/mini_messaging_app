@@ -673,7 +673,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'sender_id' => $sender->id,
             'is_available_on_sender' => true,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => true,
             'body' => 'test message',
         ]);
@@ -685,7 +685,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'sender_id' => $sender->id,
             'is_available_on_sender' => false,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => true,
             'body' => 'test message',
         ]);
@@ -711,7 +711,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'sender_id' => $sender->id,
             'is_available_on_sender' => true,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => true,
         ]);
 
@@ -722,7 +722,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'id' => $message['id'],
             'is_available_on_sender' => true,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => false,
         ]);
         $this->assertDatabaseCount(Message::class, 1);
@@ -747,7 +747,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'sender_id' => $sender->id,
             'is_available_on_sender' => true,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => true,
         ]);
 
@@ -759,7 +759,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'sender_id' => $sender->id,
             'is_available_on_sender' => false,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => true,
         ]);
         $this->assertDatabaseCount(Message::class, 1);
@@ -771,7 +771,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'id' => $message['id'],
             'is_available_on_sender' => false,
-            'messageable_type' => MessageableType::Conversation,
+            'messageable_type' => MessageableType::Conversation->value,
             'is_available_on_receiver' => false,
         ]);
         $this->assertDatabaseCount(Message::class, 1);
