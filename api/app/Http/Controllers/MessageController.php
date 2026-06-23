@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
+use App\Events\MessageSent;
 use App\Http\Requests\StoreMessageRequest;
 use App\Http\Requests\UpdateMessageRequest;
 use App\Http\Resources\MessageCollection;
@@ -104,6 +105,8 @@ class MessageController extends Controller
 
                 return $message;
             });
+
+            MessageSent::dispatch($message);
 
             return response()->json(new MessageResource($message), Response::HTTP_CREATED);
         } catch (\Throwable $e) {

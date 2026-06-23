@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelVisibility;
 use App\Enums\MessageableType;
+use App\Events\MessageSent;
 use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -14,6 +15,7 @@ use App\Services\ChannelService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -30,6 +32,8 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_message_other_user()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiver_user = User::factory()->create();
@@ -53,6 +57,8 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_message_channels_with_permission()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $channelOwner = User::factory()->create();
         $ownerProfile = $channelOwner->profile;
         $channelService = app(ChannelService::class);
@@ -390,6 +396,8 @@ class MessageTest extends TestCase
     #[Test]
     public function channels_fetched_messages_does_not_include_removed()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $channelOwner = User::factory()->create();
         $channelService = app(ChannelService::class);
         $channel = $channelService->createChannel([
@@ -657,6 +665,8 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_hide_associated_message_as_sender()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiverUser = User::factory()->create();
@@ -695,6 +705,8 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_hide_associated_message_as_receiver()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiverUser = User::factory()->create();
@@ -731,6 +743,8 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_hide_associated_message_both_plus_soft_delete()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiverUser = User::factory()->create();
@@ -845,4 +859,25 @@ class MessageTest extends TestCase
     //    test_message_model_has_expected_relationships
     //    test_message_queries_are_optimized_and_use_indexes (if you enforce indexes)
     //    test_message_factory_generates_valid_model
+
+    #[Test]
+    public function sending_a_message_dispatches_message_sent_event()
+    {
+        Event::fake([MessageSent::class]);
+
+        $sender = User::factory()->create();
+        $receiver = User::factory()->create();
+
+        $this->actingAs($sender, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_id' => $receiver->profile->id,
+                'body' => 'Hello there',
+            ])
+            ->assertStatus(Response::HTTP_CREATED);
+
+        Event::assertDispatched(MessageSent::class, function ($event) use ($sender) {
+            return $event->message->sender_id === $sender->profile->id
+                && $event->message->body === 'Hello there';
+        });
+    }
 }

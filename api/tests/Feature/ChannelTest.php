@@ -7,6 +7,7 @@ use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\ProfileableTypes;
+use App\Events\MessageSent;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\Message;
@@ -14,6 +15,7 @@ use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -152,6 +154,8 @@ class ChannelTest extends TestCase
     #[Test]
     public function channel_removal_removes_the_messages_and_the_profile()
     {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
         $channelOwner = User::factory()->create();
         $response = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('channel.store'), [
