@@ -7,6 +7,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfilePictureController;
+use App\Http\Controllers\UserTypingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -54,5 +55,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('message/{message}', [MessageController::class, 'hide'])->name('message.hide'); // hide for requester
         // (soft) delete if is sender and receiver hasn't seen
         Route::delete('message/{message}/revoke', [MessageController::class, 'destroy'])->name('message.destroy');
+
+        Route::post('user-typing', [UserTypingController::class, 'store'])->name('user.typing');
     });
 });
