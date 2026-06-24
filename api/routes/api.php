@@ -56,6 +56,8 @@ Route::prefix('v1')->group(function () {
         // (soft) delete if is sender and receiver hasn't seen
         Route::delete('message/{message}/revoke', [MessageController::class, 'destroy'])->name('message.destroy');
 
+        // real-time endpoints
         Route::post('user-typing', [UserTypingController::class, 'store'])->name('user.typing');
+        Route::post('message/{message}/read', [MessageController::class, 'read'])->name('message.read');
     });
 });

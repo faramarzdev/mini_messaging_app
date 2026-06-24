@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\ChannelMemberStatus;
+use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\MessageableType;
+use App\Events\MessageRead;
 use App\Events\MessageSent;
+use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -849,10 +852,6 @@ class MessageTest extends TestCase
     //    test_marking_as_read_updates_conversation_unread_count
     //    test_read_receipt_event_is_dispatched (if applicable)
     //
-    // Real‑Time / WebSockets (optional)
-    //
-    //    test_new_message_broadcast_event_is_fired
-    //    test_read_receipt_broadcast_event_is_fired
     //
     // Database & Performance
     //
@@ -879,5 +878,132 @@ class MessageTest extends TestCase
             return $event->message->sender_id === $sender->profile->id
                 && $event->message->body === 'Hello there';
         });
+    }
+
+    #[Test]
+    public function mark_conversation_message_as_read_dispatches_read_and_update_last_read_message_correctly()
+    {
+        Event::fake([MessageSent::class, MessageRead::class]);
+        $sender = User::factory()->create();
+        $reader = User::factory()->create();
+        $conversation = Conversation::factory()->create([
+            'lower_profile_id' => $sender->profile->id,
+            'higher_profile_id' => $reader->profile->id,
+            'lower_profile_last_read_message_id' => 1,
+            'higher_profile_last_read_message_id' => 1,
+        ]);
+        $message = Message::factory()->create([
+            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_id' => $conversation->id,
+
+        ]);
+        $seedingMessageId = $message->id;
+        $conversation->update([
+            'lower_profile_last_read_message_id' => $seedingMessageId,
+            'higher_profile_last_read_message_id' => $seedingMessageId,
+        ]);
+
+        $messageResponse = $this->actingAs($sender, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_id' => $reader->profile->id,
+                'body' => 'Hello there',
+            ]);
+        $messageResponse->assertStatus(Response::HTTP_CREATED);
+        $messageId = $messageResponse->json('id');
+        $this->assertDatabaseHas(Message::class, [
+            'id' => $messageId,
+            'sender_id' => $sender->profile->id,
+            'is_available_on_sender' => true,
+            'is_available_on_receiver' => true,
+            'is_read' => false,
+        ]);
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'lower_profile_id' => $sender->profile->id,
+            'higher_profile_id' => $reader->profile->id,
+            'lower_profile_last_read_message_id' => $seedingMessageId,
+            'higher_profile_last_read_message_id' => $seedingMessageId,
+        ]);
+
+        $this->actingAs($reader, 'sanctum')
+            ->postJson(route('message.read', ['message' => $messageId]))
+            ->assertStatus(Response::HTTP_OK);
+
+        $this->assertDatabaseHas(Message::class, [
+            'id' => $messageId,
+            'sender_id' => $sender->profile->id,
+            'is_available_on_receiver' => true,
+            'is_read' => true,
+        ]);
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'lower_profile_id' => $sender->profile->id,
+            'higher_profile_id' => $reader->profile->id,
+            'lower_profile_last_read_message_id' => $seedingMessageId,
+            'higher_profile_last_read_message_id' => $messageId,
+        ]);
+
+        Event::assertDispatched(MessageRead::class, function ($event) use ($reader, $messageId) {
+            return $event->message->id === $messageId
+                && $event->readerProfile->id === $reader->profile->id;
+        });
+    }
+
+    #[Test]
+    public function user_can_mark_their_channel_message_as_read()
+    {
+        Event::fake([MessageRead::class]);
+
+        $channel = Channel::factory()->create([
+            'type' => ChannelType::Group->value,
+        ]);
+        $message = Message::factory()->create([
+            'messageable_type' => MessageableType::Channel->value,
+            'messageable_id' => $channel->id,
+        ]);
+
+        $member = User::factory()->create();
+        $channel->members()->create([
+            'profile_id' => $member->profile->id,
+            'status' => ChannelMemberStatus::Approved->value,
+        ]);
+
+        $this->actingAs($member, 'sanctum')
+            ->postJson(route('message.read', ['message' => $message->id]))
+            ->assertStatus(Response::HTTP_OK);
+
+        $this->assertDatabaseHas(ChannelMember::class, [
+            'channel_id' => $channel->id,
+            'profile_id' => $member->profile->id,
+            'last_read_message_id' => $message->id,
+        ]);
+    }
+
+    #[Test]
+    public function message_cannot_be_marked_as_read_by_unauthorized_user()
+    {
+        Event::fake([MessageRead::class]);
+
+        Message::factory(10)->create();
+        $conversation = Conversation::factory()->create([
+            'lower_profile_last_read_message_id' => 1,
+            'higher_profile_last_read_message_id' => 1,
+        ]);
+        $message = Message::factory()->create([
+            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_id' => $conversation->id,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson(route('message.read', ['message' => $message->id]))
+            ->assertStatus(Response::HTTP_FORBIDDEN);
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_last_read_message_id' => 1,
+            'higher_profile_last_read_message_id' => 1,
+        ]);
     }
 }

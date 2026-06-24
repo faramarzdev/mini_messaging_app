@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
+use App\Events\MessageRead;
 use App\Events\MessageSent;
 use App\Http\Requests\StoreMessageRequest;
 use App\Http\Requests\UpdateMessageRequest;
 use App\Http\Resources\MessageCollection;
 use App\Http\Resources\MessageResource;
+use App\Models\Channel;
+use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
@@ -128,7 +131,7 @@ class MessageController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateMessageRequest $request, Message $message)
+    public function update(UpdateMessageRequest $request, Message $message): JsonResponse
     {
         $this->authorize('update', $message);
 
@@ -149,7 +152,7 @@ class MessageController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Message $message)
+    public function destroy(Message $message): JsonResponse
     {
         $this->authorize('delete', $message);
         $message->delete();
@@ -157,7 +160,7 @@ class MessageController extends Controller
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
 
-    public function hide(Request $request, Message $message)
+    public function hide(Request $request, Message $message): JsonResponse
     {
         $this->authorize('hide', $message);
         $profile = $request->currentProfile();
@@ -167,7 +170,7 @@ class MessageController extends Controller
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
 
-    public function search(Request $request, Profile $profile)
+    public function search(Request $request, Profile $profile): JsonResponse
     {
         $this->authorize('viewMessages', [Message::class, $profile]);
 
@@ -187,5 +190,41 @@ class MessageController extends Controller
         );
 
         return response()->json(new MessageCollection($messages), Response::HTTP_OK);
+    }
+
+    public function read(Request $request, Message $message): JsonResponse
+    {
+        // $this->authorize('read', $message);
+        // as we need to check the messageable type and update the message and messageable data , we authorize the query here to avoid doubling queries and logic
+
+        $readerProfile = $request->currentProfile();
+        if ($message->messageable instanceof Conversation) {
+            $conversation = $message->messageable;
+            if (! in_array($readerProfile->id, $conversation->connectedProfilesIds())) {
+                return response()->json([], Response::HTTP_FORBIDDEN);
+            }
+
+            $isLowerProfile = $readerProfile->id === $conversation->lower_profile_id;
+            if ($isLowerProfile && $conversation->lower_profile_last_read_message_id < $message->id) {
+                $conversation->update(['lower_profile_last_read_message_id' => $message->id]);
+
+            } elseif (! $isLowerProfile && $conversation->higher_profile_last_read_message_id < $message->id) {
+                $conversation->update(['higher_profile_last_read_message_id' => $message->id]);
+            }
+
+            $message->update(['is_read' => true]);
+            MessageRead::dispatch($message, $readerProfile);
+
+        } elseif ($message->messageable instanceof Channel) {
+            $member = ChannelMember::where('channel_id', $message->messageable->id)
+                ->where('profile_id', $readerProfile->id)
+                ->first();
+            if ($member && $member->last_read_message_id < $message->id) {
+                $member->update(['last_read_message_id' => $message->id]);
+                MessageRead::dispatch($message, $readerProfile);
+            }
+        }
+
+        return response()->json([], Response::HTTP_OK);
     }
 }

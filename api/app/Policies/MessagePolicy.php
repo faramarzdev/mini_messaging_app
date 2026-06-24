@@ -8,6 +8,7 @@ use App\Enums\MessageableType;
 use App\Enums\ProfileableTypes;
 use App\Models\Channel;
 use App\Models\ChannelMember;
+use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
@@ -168,6 +169,25 @@ class MessagePolicy
      */
     public function forceDelete(User $user, Message $message): bool
     {
+        return false;
+    }
+
+    public function read(User $user, Message $message): bool
+    {
+        $profileId = $user->profile?->id;
+        if (! $profileId) {
+            return false;
+        }
+        if ($message->messageable instanceof Conversation) {
+            $conversation = $message->messageable;
+            if (in_array($profileId, $conversation->connectedProfilesIds())) {
+                return true;
+            }
+        } elseif ($message->messageable instanceof Channel) {
+            return ChannelMember::where('channel_id', $message->messageable->id)
+                ->where('profile_id', $profileId)->exists();
+        }
+
         return false;
     }
 }
