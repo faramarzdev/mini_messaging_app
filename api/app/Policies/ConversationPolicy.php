@@ -2,9 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\ChannelVisibility;
-use App\Enums\ProfileableTypes;
-use App\Models\Channel;
 use App\Models\Conversation;
 use App\Models\User;
 
