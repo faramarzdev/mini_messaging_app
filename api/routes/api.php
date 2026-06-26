@@ -63,3 +63,5 @@ Route::prefix('v1')->group(function () {
         Route::post('message/{message}/read', [MessageController::class, 'read'])->name('message.read');
     });
 });
+
+Route::fallback(fn () => response()->json(['message' => 'Route not found!'], 404));
