@@ -111,5 +111,6 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+    'is_registration_allowed' => env('AUTH_IS_REGISTRATION_ALLOWED', true),
 
 ];
