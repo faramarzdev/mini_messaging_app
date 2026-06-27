@@ -118,8 +118,10 @@ class AuthController extends Controller
         if ($status === Password::PASSWORD_RESET) {
             return response()->json(['status' => __($status)], Response::HTTP_OK);
         }
+        // only these errors left:  INVALID_USER, INVALID_TOKEN, EXPIRED_TOKEN
+        //   so we return the same message to prevent "user/email enumeration"
         throw ValidationException::withMessages([
-            'email' => [__($status)],
+            'email' => ['This password reset link is invalid or has expired.'],
         ]);
     }
 }
