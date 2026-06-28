@@ -28,6 +28,7 @@ class Channel extends Model implements Messageable
         'can_join_by_link',
         'confirm_joined',
         'messages_count',
+        'last_message_id',
     ];
 
     protected $casts = [
@@ -63,6 +64,11 @@ class Channel extends Model implements Messageable
     {
         return $this->hasMany(ChannelMember::class, 'channel_id')
             ->whereIn('status', [ChannelMemberStatus::Pending->value]);
+    }
+
+    public function lastMessage(): BelongsTo
+    {
+        return $this->belongsTo(Message::class, 'last_message_id');
     }
 
     public function profileRole()

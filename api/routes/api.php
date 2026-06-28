@@ -60,7 +60,8 @@ Route::prefix('v1')->group(function () {
 
         // real-time endpoints
         Route::post('user-typing', [UserTypingController::class, 'store'])->name('user.typing');
-        Route::post('message/{message}/read', [MessageController::class, 'read'])->name('message.read');
+        Route::post('message/{message}/read', [MessageController::class, 'markAsRead'])->name('message.read');
+
     });
 });
 
