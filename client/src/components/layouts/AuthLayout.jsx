@@ -6,7 +6,7 @@ export default function AuthLayout() {
 
   if (loading) return null;
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/app/" replace />;
 
   return (
     <div className="h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">

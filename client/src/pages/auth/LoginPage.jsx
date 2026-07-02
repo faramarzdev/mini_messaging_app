@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AuthInput from "../components/ui/AuthInput";
-import { useAuth } from "../context/AuthContext";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import AuthInput from "../../components/ui/AuthInput";
+import { useAuth } from "../../context/AuthContext";
+import LoadingOverlay from "../../components/ui/LoadingOverlay";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,7 +29,7 @@ export default function LoginPage() {
     }
     try {
       await login(email, password);
-      navigate("/");
+      navigate("/app");
     } catch (err) {
       if (err.response?.message) {
         setErrors((prev) => [...prev, err.response.message]);
@@ -137,14 +137,14 @@ export default function LoginPage() {
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
             Don't have an account?
             <Link
-              to="/register"
+              to="/auth/register"
               className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline ml-1"
             >
               Sign up
             </Link>
           </p>
           <p className="text-center text-sm  mt-5 text-indigo-600 dark:text-indigo-400 font-medium hover:underline ml-1">
-            <Link to="/forgot-password">Forgot password?</Link>
+            <Link to="/auth/forgot-password">Forgot password?</Link>
           </p>
         </div>
       </div>

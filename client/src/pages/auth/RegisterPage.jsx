@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AuthInput from "../components/ui/AuthInput";
-import { useAuth } from "../context/AuthContext";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import AuthInput from "../../components/ui/AuthInput";
+import { useAuth } from "../../context/AuthContext";
+import LoadingOverlay from "../../components/ui/LoadingOverlay";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -46,7 +46,7 @@ export default function RegisterPage() {
 
     try {
       await register(name, email, password, confirmPassword);
-      navigate("/");
+      navigate("/app"); // registration would log user in too
     } catch (err) {
       if (err.response?.message) {
         setErrors((prev) => [...prev, err.response.message]);
@@ -207,7 +207,7 @@ export default function RegisterPage() {
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
             Already have an account?
             <Link
-              to="/login"
+              to="/auth/login"
               id="switch-to-login"
               className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline ml-1"
             >

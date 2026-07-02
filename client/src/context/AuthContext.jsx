@@ -4,6 +4,8 @@ import {
   registerRequest,
   logoutRequest,
   getMe,
+  forgotPasswordRequest,
+  resetPasswordRequest,
 } from "../api/auth";
 
 const AuthContext = createContext(null);
@@ -35,6 +37,25 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
+  const forgotPassword = async (email) => {
+    const response = await forgotPasswordRequest(email);
+    return response;
+  };
+
+  const resetPassword = async (
+    token,
+    email,
+    password,
+    password_confirmation,
+  ) => {
+    await resetPasswordRequest({
+      token,
+      email,
+      password,
+      password_confirmation,
+    });
+  };
+
   const register = async (name, email, password, passwordConfirmation) => {
     const { token, user: userData } = await registerRequest({
       name,
@@ -59,7 +80,16 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, fetchUser }}
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        fetchUser,
+        forgotPassword,
+        resetPassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

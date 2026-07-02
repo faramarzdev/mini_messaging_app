@@ -9,4 +9,11 @@ export const registerRequest = (data) =>
 
 export const logoutRequest = () => api.post("/logout").then((r) => r.data);
 
+export const forgotPasswordRequest = (email) =>
+  api.post("/forgot-password", { email }).then((r) => r.data);
+
+/** data must be object including:  token, email, password, password_confirmation */
+export const resetPasswordRequest = (data) =>
+  api.post("/reset-password", data).then((r) => r.data);
+
 export const getMe = () => api.get("/me").then((r) => r.data);
