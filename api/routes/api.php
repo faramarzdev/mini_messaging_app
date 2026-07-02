@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ChannelMemberController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
@@ -62,6 +63,7 @@ Route::prefix('v1')->group(function () {
         Route::post('user-typing', [UserTypingController::class, 'store'])->name('user.typing');
         Route::post('message/{message}/read', [MessageController::class, 'markAsRead'])->name('message.read');
 
+        Route::get('chats/my', [ChatController::class, 'my'])->name('chats.my');
     });
 });
 
