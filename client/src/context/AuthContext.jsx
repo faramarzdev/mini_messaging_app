@@ -1,123 +1,103 @@
-import { createContext, useState, useContext, useEffect } from "react";
-import api from "../config/api";
+import { createContext, useContext, useState, useEffect } from "react";
+import {
+  loginRequest,
+  registerRequest,
+  logoutRequest,
+  getMe,
+  forgotPasswordRequest,
+  resetPasswordRequest,
+} from "../api/auth";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      // Only fetch user on initial load (page refresh)
-      // Login/register set user directly from response
-      if (!user) {
-        fetchUser();
-      } else {
-        setLoading(false);
-      }
-    } else {
-      setLoading(false);
-    }
-  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchUser = async () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
-      const response = await api.get("/me");
-      setUser(response.data.user);
-    } catch (error) {
-      localStorage.removeItem("token");
-      setToken(null);
-      delete api.defaults.headers.common["Authorization"];
+      const userData = await getMe();
+      setUser(userData);
+    } catch {
+      localStorage.removeItem("auth_token");
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (credentials) => {
-    try {
-      const response = await api.post("/login", credentials);
-
-      // Set header before state updates
-      api.defaults.headers.common["Authorization"] =
-        `Bearer ${response.data.token}`;
-
-      localStorage.setItem("token", response.data.token);
-      setToken(response.data.token);
-      setUser(response.data.user); // ← Direct set, no fetchUser needed!
-
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  const login = async (email, password) => {
+    const { token, user: userData } = await loginRequest(email, password);
+    localStorage.setItem("auth_token", token);
+    setUser(userData);
+    return userData;
   };
 
-  const register = async (userData) => {
-    try {
-      const response = await api.post("/register", userData);
+  const forgotPassword = async (email) => {
+    const response = await forgotPasswordRequest(email);
+    return response;
+  };
 
-      api.defaults.headers.common["Authorization"] =
-        `Bearer ${response.data.token}`;
+  const resetPassword = async (
+    token,
+    email,
+    password,
+    password_confirmation,
+  ) => {
+    await resetPasswordRequest({
+      token,
+      email,
+      password,
+      password_confirmation,
+    });
+  };
 
-      localStorage.setItem("token", response.data.token);
-      setToken(response.data.token);
-      setUser(response.data.user); // ← Direct set!
-
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  const register = async (name, email, password, passwordConfirmation) => {
+    const { token, user: userData } = await registerRequest({
+      name,
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+    localStorage.setItem("auth_token", token);
+    setUser(userData);
+    return userData;
   };
 
   const logout = async () => {
-    try {
-      await api.post("/logout");
-    } catch (error) {
-      console.error("Logout API call failed:", error);
-    } finally {
-      localStorage.removeItem("token");
-      setToken(null);
-      setUser(null);
-      delete api.defaults.headers.common["Authorization"];
-    }
+    await logoutRequest();
+    localStorage.removeItem("auth_token");
+    setUser(null);
   };
 
-  const value = {
-    user,
-    token,
-    loading,
-    isAuthenticated: !!user,
-    login,
-    register,
-    logout,
-  };
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   return (
-    <AuthContext.Provider value={value}>
-      {loading ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "100vh",
-          }}
-        >
-          Loading...
-        </div>
-      ) : (
-        children
-      )}
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        fetchUser,
+        forgotPassword,
+        resetPassword,
+      }}
+    >
+      {children}
     </AuthContext.Provider>
   );
-};
+}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
