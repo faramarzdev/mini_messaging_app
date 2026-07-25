@@ -33,13 +33,13 @@ class AppServiceProvider extends ServiceProvider
                 ->by($request->user()?->id ?? $request->ip());
         });
 
-        // Rate limit for login/register attempts
+        // Rate limit for login/register/forgot-pass attempts
         RateLimiter::for('auth', function (Request $request) {
-            return Limit::perMinute(5)  // Only 5 attempts per minute
+            return Limit::perMinutes(30, 10)  // Only 10 attempts per 30 minutes
                 ->by($request->ip())     // Per IP address
                 ->response(function () {
                     return response()->json([
-                        'message' => 'Too many login attempts. Please try again later.',
+                        'message' => 'Too many attempts. Please try again later.',
                     ], 429);
                 });
         });
@@ -49,5 +49,10 @@ class AppServiceProvider extends ServiceProvider
             'channel' => \App\Models\Channel::class,
             'conversation' => \App\Models\Conversation::class,
         ]);
+
+        /* making it through ResetPasswordNotification
+         * ResetPassword::createUrlUsing(function (User $user, string $token) {
+            return config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . $user->email;
+        });*/
     }
 }

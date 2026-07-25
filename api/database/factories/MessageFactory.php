@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\MessageableType;
 use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
 use App\Models\Conversation;
@@ -51,7 +52,7 @@ class MessageFactory extends Factory
             'body' => fake()->paragraph(),
             'type' => MessageType::Text->value,
             'is_read' => false,
-            'messageable_type' => Conversation::class,
+            'messageable_type' => MessageableType::Conversation->value,
             'messageable_id' => Conversation::factory()->state([
                 'lower_profile_id' => $lowerId,
                 'higher_profile_id' => $higherId,

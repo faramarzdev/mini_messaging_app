@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -105,5 +108,67 @@ class AuthTest extends TestCase
                     'email' => 'jane@example.com',
                 ],
             ]);
+    }
+
+    #[Test]
+    public function user_can_request_password_reset()
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $response = $this->postJson(route('forgot-password'), [
+            'email' => $user->email,
+        ]);
+        $response->assertStatus(Response::HTTP_OK);
+
+        Notification::assertSentTo($user, ResetPasswordNotification::class);
+    }
+
+    #[Test]
+    public function user_can_reset_password_with_valid_token()
+    {
+        $user = User::factory()->create();
+        $token = Password::createToken($user);
+        $response = $this->postJson(route('reset-password'), [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertStatus(Response::HTTP_OK);
+    }
+
+    #[Test]
+    public function reset_fails_with_invalid_token()
+    {
+        // invalid token for requester user, yet correct structure
+        $invalidToken = Password::createToken(User::factory()->create());
+
+        $user = User::factory()->create();
+        $response = $this->postJson(route('reset-password'), [
+            'token' => $invalidToken,
+            'email' => $user->email,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+
+    }
+
+    #[Test]
+    public function reset_actually_changes_password_in_db()
+    {
+        $user = User::factory()->create();
+        $token = Password::createToken($user);
+        $newPassword = 'password123';
+        $response = $this->postJson(route('reset-password'), [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => $newPassword,
+            'password_confirmation' => $newPassword,
+        ]);
+        $response->assertStatus(Response::HTTP_OK);
+        $this->assertTrue(Hash::check($newPassword, $user->fresh()->password));
+        $this->assertSame(0, $user->tokens()->count());
     }
 }

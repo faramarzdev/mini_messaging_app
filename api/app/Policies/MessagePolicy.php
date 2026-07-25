@@ -117,19 +117,12 @@ class MessagePolicy
         if (! $profileId) {
             return false;
         }
-
-        if ($message->messageable_type === MessageableType::Conversation->value) {
-            if (in_array($profileId, $message->messageable->connectedProfilesIds())) {
-                return true;
-            }
-        } elseif ($message->messageable_type === MessageableType::Channel->value) {
-            $profileInChannel = ChannelMember::where('channel_id', $message->messageable_id)->where('profile_id', $profileId)->first();
-            if ($profileInChannel) {
-                $userRole = $profileInChannel->role;
-                if (in_array($userRole, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
-                    return true;
-                }
-            }
+        // hide only works for conversation as the message belongs to two profile
+        if (
+            $message->messageable instanceof Conversation &&
+            in_array($profileId, $message->messageable->connectedProfilesIds())
+        ) {
+            return true;
         }
 
         return false;
@@ -144,13 +137,28 @@ class MessagePolicy
         if (! $profileId) {
             return false;
         }
-
-        if (
-            $profileId === $message->sender_id &&
-            $message->is_available_on_sender &&
-            ! $message->is_read
-        ) {
-            return true;
+        if ($message->messageable instanceof Conversation) {
+            if (
+                $profileId === $message->sender_id &&
+                $message->is_available_on_sender &&
+                ! $message->is_read
+            ) {
+                return true;
+            }
+        } elseif ($message->messageable instanceof Channel) {
+            // channel and group
+            // the sender itself
+            if ($profileId === $message->sender_id) {
+                return true;
+            }
+            // the channel/group managements
+            $profileInChannel = ChannelMember::where('channel_id', $message->messageable_id)->where('profile_id', $profileId)->first();
+            if ($profileInChannel) {
+                $userRole = $profileInChannel->role;
+                if (in_array($userRole, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+                    return true;
+                }
+            }
         }
 
         return false;

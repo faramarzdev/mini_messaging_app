@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ChannelMemberController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
@@ -15,6 +16,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('throttle:auth')->group(function () {
         Route::post('register', [AuthController::class, 'register'])->name('register');
         Route::post('login', [AuthController::class, 'login'])->name('login');
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -58,6 +61,10 @@ Route::prefix('v1')->group(function () {
 
         // real-time endpoints
         Route::post('user-typing', [UserTypingController::class, 'store'])->name('user.typing');
-        Route::post('message/{message}/read', [MessageController::class, 'read'])->name('message.read');
+        Route::post('message/{message}/read', [MessageController::class, 'markAsRead'])->name('message.read');
+
+        Route::get('chats/my', [ChatController::class, 'my'])->name('chats.my');
     });
 });
+
+Route::fallback(fn () => response()->json(['message' => 'Route not found!'], 404));

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\MessageableType;
 use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
 use App\Events\MessageRead;
@@ -89,12 +90,13 @@ class MessageController extends Controller
                     'reply_id' => $reply_id,
                 ]);
 
+                $toUpdate = [
+                    'last_message_id' => $message->id,
+                ];
                 if ($conversation) {
-                    // the conversation must appear on both side (even if removed/hide)
-                    $toUpdate = [
-                        'is_available_for_lower_profile' => true,
-                        'is_available_for_higher_profile' => true,
-                    ];
+                    // the conversation must appear on both side (even if it has been removed/hiden)
+                    $toUpdate['is_available_for_lower_profile'] = true;
+                    $toUpdate['is_available_for_higher_profile'] = true;
 
                     if (! $conversation->lower_profile_last_read_message_id) {
                         $toUpdate['lower_profile_last_read_message_id'] = $message->id;
@@ -103,8 +105,9 @@ class MessageController extends Controller
                         $toUpdate['higher_profile_last_read_message_id'] = $message->id;
                     }
 
-                    $conversation->update($toUpdate);
                 }
+
+                $messageable->update($toUpdate);
 
                 return $message;
             });
@@ -118,15 +121,6 @@ class MessageController extends Controller
             return response()->json([], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
-    //    /**
-    //     * Display the specified resource.
-    //     */
-    //    public function show(Message $message)
-    //    {
-    //        $this->authorize('view', $message);
-    //        return new MessageResource($message);
-    //    }
 
     /**
      * Update the specified resource in storage.
@@ -150,11 +144,42 @@ class MessageController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * soft delete the specified resource, only when the receiver didn't see the message
      */
-    public function destroy(Message $message): JsonResponse
+    public function destroy(Request $request, Message $message): JsonResponse
     {
         $this->authorize('delete', $message);
+        $isLastMessage = $message->messageable->last_message_id === $message->id;
+        if ($isLastMessage) {
+            $messageable = $message->messageable();
+            $lastMessageIdToSet = null;
+            if ($message->messageable_type === MessageableType::Conversation->value) {
+                // $profile = $request->currentProfile();
+                $previousMessage = Message::where('messageable_type', $message->messageable_type)
+                    ->where('messageable_id', $message->messageable_id)
+                    ->where('id', '!=', $message->id)
+                    /* ->where(function ($query) use ($profile) { // needs last_message_id_on_(lower and higher) then
+                        $query->where(function ($query) use ($profile) {
+                            $query->where('sender_id', $profile->id)
+                                ->where('is_available_on_sender', true);
+                        })
+                            ->orWhere(function ($query) use ($profile) {
+                                $query->where('sender_id', '!=',$profile->id)
+                                    ->where('is_available_on_receiver', true);
+                            });
+                    }) */
+                    ->orderBy('id', 'desc')->first();
+                $lastMessageIdToSet = $previousMessage?->id;
+            } elseif ($message->messageable_type === MessageableType::Channel->value) {
+                $previousMessage = Message::where('messageable_type', $message->messageable_type)
+                    ->where('messageable_id', $message->messageable_id)
+                    ->where('id', '!=', $message->id)
+                    ->orderBy('id', 'desc')->first();
+                $lastMessageIdToSet = $previousMessage?->id;
+            }
+            $messageable->update(['last_message_id' => $lastMessageIdToSet]);
+        }
+        //
         $message->delete();
 
         return response()->json([], Response::HTTP_NO_CONTENT);
@@ -192,7 +217,10 @@ class MessageController extends Controller
         return response()->json(new MessageCollection($messages), Response::HTTP_OK);
     }
 
-    public function read(Request $request, Message $message): JsonResponse
+    /**
+     * real-time event; no impact/change on any models
+     */
+    public function markAsRead(Request $request, Message $message): JsonResponse
     {
         // $this->authorize('read', $message);
         // as we need to check the messageable type and update the message and messageable data , we authorize the query here to avoid doubling queries and logic

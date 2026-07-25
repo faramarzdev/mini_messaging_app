@@ -1,16 +1,16 @@
 @component('mail::message')
     # Successful Registration
 
-    Hello **{{ $user->name }}**,
+    Hello **{{ $userName }}**,
 
     @component('mail::panel')
         Your registration was successful.
     @endcomponent
 
-    @component('mail::button', ['url' => config('app.url')])
-        Visit {{ config('app.name') }}
+    @component('mail::button', ['url' => $appUrl])
+        Visit {{ $appName }}
     @endcomponent
 
-    Thanks,<br>
-    {{ config('app.name') }}
+
+    Regards, {{ $appName }}
 @endcomponent

@@ -30,7 +30,9 @@ class WelcomeEmail extends Mailable implements ShouldQueue
         return new Content(
             markdown: 'emails.welcome',
             with: [
-                'user' => $this->user,
+                'userName' => $this->user->name,
+                'appUrl' => config('app.url'),
+                'appName' => config('app.name'),
             ]
         );
     }

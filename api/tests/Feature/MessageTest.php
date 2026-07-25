@@ -87,6 +87,163 @@ class MessageTest extends TestCase
     }
 
     #[Test]
+    public function sending_message_update_last_message_id()
+    {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
+        // for conversations
+        $senderUser = User::factory()->create();
+        $sender = $senderUser->profile;
+        $receiver_user = User::factory()->create();
+        $receiver = $receiver_user->profile;
+
+        $response = $this->actingAs($senderUser)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $receiver->id,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $messageId = $response->json()['id'];
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $sender->id,
+            'higher_profile_id' => $receiver->id,
+            'last_message_id' => $messageId,
+        ]);
+
+        // for channels
+        $channelOwner = User::factory()->create();
+        $ownerProfile = $channelOwner->profile;
+        $channelService = app(ChannelService::class);
+        $channel = $channelService->createChannel([
+            'name' => 'test channel',
+            'description' => 'test channel description',
+
+        ], $channelOwner);
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => null,
+        ]);
+
+        $response = $this->actingAs($channelOwner)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $channel->profile->id,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $messageId = $response->json()['id'];
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => $messageId,
+        ]);
+    }
+
+    #[Test]
+    public function message_removal_update_last_message_id()
+    {
+        Event::fake([MessageSent::class]); // not checking the broadcasting
+
+        // for conversations
+        $senderUser = User::factory()->create();
+        $sender = $senderUser->profile;
+        $receiver_user = User::factory()->create();
+        $receiver = $receiver_user->profile;
+        $this->assertDatabaseCount(Message::class, 0);
+        $response = $this->actingAs($senderUser)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $receiver->id,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $firstMessageId = $response->json()['id'];
+        $response = $this->actingAs($senderUser)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $receiver->id,
+                'body' => 'test message',
+            ])->assertStatus(Response::HTTP_CREATED);
+        $lastMessageId = $response->json()['id'];
+        $this->assertDatabaseCount(Message::class, 2);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $sender->id,
+            'higher_profile_id' => $receiver->id,
+            'last_message_id' => $lastMessageId,
+        ]);
+
+        $this->actingAs($senderUser)
+            ->deleteJson(route('message.destroy', $lastMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $sender->id,
+            'higher_profile_id' => $receiver->id,
+            'last_message_id' => $firstMessageId,
+        ]);
+
+        $this->actingAs($senderUser)
+            ->deleteJson(route('message.destroy', $firstMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $sender->id,
+            'higher_profile_id' => $receiver->id,
+            'last_message_id' => null,
+        ]);
+
+        // for channels
+        $channelOwner = User::factory()->create();
+        $ownerProfile = $channelOwner->profile;
+        $channelService = app(ChannelService::class);
+        $channel = $channelService->createChannel([
+            'name' => 'test channel',
+            'description' => 'test channel description',
+
+        ], $channelOwner);
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => null,
+        ]);
+
+        $response = $this->actingAs($channelOwner)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $channel->profile->id,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $firstMessageId = $response->json()['id'];
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => $firstMessageId,
+        ]);
+
+        $response = $this->actingAs($channelOwner)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $channel->profile->id,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $lastMessageId = $response->json()['id'];
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => $lastMessageId,
+        ]);
+
+        $this->actingAs($channelOwner)
+            ->deleteJson(route('message.destroy', $lastMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => $firstMessageId,
+        ]);
+
+        $this->actingAs($channelOwner)
+            ->deleteJson(route('message.destroy', $firstMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_message_id' => null,
+        ]);
+
+    }
+
+    #[Test]
     public function cannot_send_empty_message()
     {
         $senderUser = User::factory()->create();
@@ -606,22 +763,29 @@ class MessageTest extends TestCase
     // Deleting
 
     #[Test]
-    public function user_can_delete_own_message_before_seen()
+    public function user_can_delete_own_message_before_seen_in_conversation()
     {
-        $senderUser = User::factory()->create();
-        $sender = $senderUser->profile;
+        Event::fake([MessageSent::class]); // not checking the broadcasting
 
-        $message = Message::factory()->create([
-            'sender_id' => $sender->id,
-        ]);
+        $senderUser = User::factory()->create();
+        $receiver_user = User::factory()->create();
+        $receiver = $receiver_user->profile;
+
+        $response = $this->actingAs($senderUser)
+            ->postJson(route('message.store'), [
+                'receiver_id' => $receiver->id,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $messageId = $response->json()['id'];
         $this->assertDatabaseCount(Message::class, 1);
 
         $response = $this->actingAs($senderUser)
-            ->deleteJson(route('message.destroy', $message->id));
+            ->deleteJson(route('message.destroy', $messageId));
         $response->assertStatus(Response::HTTP_NO_CONTENT);
 
         $this->assertSoftDeleted(Message::class, [
-            'id' => $message->id,
+            'id' => $messageId,
         ]);
         $this->assertDatabaseCount(Message::class, 1); // it's a softDelete
     }
