@@ -3,6 +3,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import AuthInput from "../../components/ui/AuthInput";
 import LoadingOverlay from "../../components/ui/LoadingOverlay";
 import { useAuth } from "../../context/AuthContext";
+import { LockIcon, ConfirmPasswordIcon } from "../../components/icons/AuthIcons";
+import { isValidEmail, isValidPassword } from "../../utils/validation";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -15,9 +18,10 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
-  const isRequestInvalid =
-    !token || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (isRequestInvalid) {
+  const isInvalidLink = !token || !email || !isValidEmail(email);
+
+  // Guard clause runs AFTER every hook above — never move hooks below this line.
+  if (isInvalidLink) {
     return (
       <div className="text-center font-bold text-red-600 dark:text-red-400 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
         Invalid Request. Please follow the link sent to your email.
@@ -34,7 +38,7 @@ export default function ResetPasswordPage() {
     if (!password || password !== confirmPassword) {
       validationErrors.push("Please fill both password fields equally.");
     }
-    if (password.length < 8) {
+    if (!isValidPassword(password)) {
       validationErrors.push("Password must be have at least 8 charcters.");
     }
 
@@ -48,11 +52,7 @@ export default function ResetPasswordPage() {
       await resetPassword(token, email, password, confirmPassword);
       setSuccessMessage(true);
     } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.message ||
-        "Something went wrong. Please try again.";
-      setErrors([message]);
+      setErrors([getErrorMessage(err)]);
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export default function ResetPasswordPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              iconSvg={LockIcon()}
+              iconSvg={<LockIcon />}
               hint="Must be at least 8 characters"
             />
 
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              iconSvg={ConfirmPasswordIcon()}
+              iconSvg={<ConfirmPasswordIcon />}
             />
 
             <button
@@ -141,41 +141,5 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </div>
-  );
-}
-// ─── Inline SVG icons ─────────────────────────────────────────────────────────
-
-function LockIcon() {
-  return (
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-      />
-    </svg>
-  );
-}
-function ConfirmPasswordIcon() {
-  return (
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-      />
-    </svg>
   );
 }

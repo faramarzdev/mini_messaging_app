@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import AppLayout from "./components/layouts/AppLayout";
 import AuthLayout from "./components/layouts/AuthLayout";
+import EmptyStatePage from "./components/layouts/EmptyStatePage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
@@ -21,7 +22,8 @@ const router = createBrowserRouter([
     path: "/app",
     element: <AppLayout />,
     children: [
-      { index: true, element: <div>Empty state</div> },
+      { index: true, element: <EmptyStatePage /> },
+      { path: "/app/contacts", element: <div>Contacts page</div> },
       { path: "/app/chat/:id", element: <div>Chat page</div> },
       { path: "/app/profile/:id", element: <div>Profile page</div> },
     ],
