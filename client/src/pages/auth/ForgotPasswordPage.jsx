@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import AuthInput from "../../components/ui/AuthInput";
 import LoadingOverlay from "../../components/ui/LoadingOverlay";
 import { useAuth } from "../../context/AuthContext";
+import { MailIcon } from "../../components/icons/AuthIcons";
+import { isValidEmail } from "../../utils/validation";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -20,7 +23,7 @@ export default function ForgotPasswordPage() {
       setLoading(false);
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isValidEmail(email)) {
       setErrors(["Please enter a valid email address"]);
       setLoading(false);
       return;
@@ -29,16 +32,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email);
       setSuccessMessage(true);
     } catch (err) {
-      if (err.response?.message) {
-        setErrors((prev) => [...prev, err.response.message]);
-      } else if (err.response?.data?.message) {
-        setErrors((prev) => [...prev, err.response.data.message]);
-      } else {
-        setErrors((prev) => [
-          ...prev,
-          "Something went wrong. Please try again.",
-        ]);
-      }
+      setErrors([getErrorMessage(err)]);
     } finally {
       setLoading(false);
     }
@@ -102,7 +96,7 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              iconSvg={MailIcon()}
+              iconSvg={<MailIcon />}
             />
             <button
               type="submit"
@@ -124,25 +118,5 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
     </div>
-  );
-}
-
-// ─── Inline SVG icons ─────────────────────────────────────────────────────────
-
-function MailIcon() {
-  return (
-    <svg
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-      />
-    </svg>
   );
 }
