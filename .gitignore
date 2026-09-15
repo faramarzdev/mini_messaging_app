@@ -8,3 +8,6 @@
 .DS_Store
 Thumbs.db
 roadmap.md
+
+*.env
+!.env.example
