@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\ProfileableTypes;
+use App\Jobs\DeleteMediaFileJob;
 use App\Models\Channel;
 use App\Models\Profile;
 use App\Models\ProfilePicture;
@@ -13,6 +14,7 @@ use App\Services\ChannelService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -160,7 +162,7 @@ class ProfileTest extends TestCase
     public function user_can_upload_own_profile_picture()
     {
         $user = User::factory()->create();
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $response = $this->actingAs($user, 'sanctum')
@@ -183,7 +185,7 @@ class ProfileTest extends TestCase
     {
         // upload
         $user = User::factory()->create();
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $response = $this->actingAs($user, 'sanctum')
@@ -198,16 +200,54 @@ class ProfileTest extends TestCase
             'original_name' => 'test_pp.jpg',
         ]);
         Storage::disk('profile_pictures')->assertExists($response->json('path'));
+        $uuid = $response->json('uuid');
+        $path = $response->json('path');
 
         // remove
         $removalResponse = $this->actingAs($user, 'sanctum')
-            ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $response->json('uuid')]), [
-                'image' => $file,
-            ]);
+            ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $uuid]));
         $removalResponse->assertStatus(Response::HTTP_NO_CONTENT);
 
-        Storage::disk('profile_pictures')->assertMissing($response->json('path'));
+        Storage::disk('profile_pictures')->assertMissing($path);
+        $this->assertDatabaseMissing(ProfilePicture::class, ['uuid' => $uuid]);
+    }
 
+    #[Test]
+    public function deleting_a_profile_picture_dispatches_cleanup_job()
+    {
+        Queue::fake();
+        Storage::fake('profile_pictures');
+
+        // upload
+        $user = User::factory()->create();
+        Storage::fake('profile_pictures');
+        $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson(route('profile.picture.store', ['profile' => $user->profile->handle]), [
+                'image' => $file,
+            ]);
+
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(ProfilePicture::class, [
+            'profile_id' => $user->profile->id,
+            'original_name' => 'test_pp.jpg',
+        ]);
+        Storage::disk('profile_pictures')->assertExists($response->json('path'));
+        $uuid = $response->json('uuid');
+        $path = $response->json('path');
+
+        // remove
+        $removalResponse = $this->actingAs($user, 'sanctum')
+            ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $uuid]));
+        $removalResponse->assertStatus(Response::HTTP_NO_CONTENT);
+
+
+        Queue::assertPushed(DeleteMediaFileJob::class, fn ($job) =>
+            $job->disk === 'profile_pictures' && $job->path === $path
+        );
+        $this->assertDatabaseMissing(ProfilePicture::class, ['uuid' => $uuid]);
     }
 
     #[Test]
@@ -215,7 +255,7 @@ class ProfileTest extends TestCase
     {
         // upload
         $user = User::factory()->create();
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $response = $this->actingAs($user, 'sanctum')
@@ -250,7 +290,7 @@ class ProfileTest extends TestCase
             'name' => 'Channel Name',
         ], $channelsOwner);
 
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $response = $this->actingAs($channelsOwner, 'sanctum')
@@ -275,7 +315,7 @@ class ProfileTest extends TestCase
             'name' => 'Channel Name',
         ], $channelsOwner);
 
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $impersonator = User::factory()->create();
@@ -300,7 +340,7 @@ class ProfileTest extends TestCase
             ->count(config('app.max_profile_picture_per_user'))
             ->create(['profile_id' => $user->profile->id]);
 
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $response = $this->actingAs($user, 'sanctum')
@@ -324,7 +364,7 @@ class ProfileTest extends TestCase
             ->count(config('app.max_profile_picture_per_channel'))
             ->create(['profile_id' => $channel->profile->id]);
 
-        Storage::fake('public');
+        Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
         $response = $this->actingAs($channelsOwner, 'sanctum')
