@@ -21,7 +21,9 @@ class ChatItemResource extends JsonResource
                 'handle' => $this->profile->handle,
                 'picture_url' => $this->profile->picture_url,
             ],
-            'last_message' => $this->last_message,
+            'last_message' => $this->lastMessage
+                ? new MessageResource($this->lastMessage)
+                : null,
             'unread_count' => (int) $this->unread_count,
         ];
     }
