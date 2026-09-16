@@ -19,6 +19,8 @@ class AuthTest extends TestCase
     #[Test]
     public function user_can_register()
     {
+        # override the config to test the ability to register
+        config(['auth.is_registration_allowed' => true]);
         $userData = [
             'name' => 'John Doe',
             'email' => 'john@doe.com',
@@ -34,7 +36,30 @@ class AuthTest extends TestCase
                 'token',
             ]);
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas(User::class, [
+            'name' => 'John Doe',
+            'email' => 'john@doe.com',
+        ]);
+    }
+
+    #[Test]
+    public function user_cannot_register_when_registration_is_blocked()
+    {
+        # override the config to test the ability to register when it is not allowed
+        config(['auth.is_registration_allowed' => false]);
+        $userData = [
+            'name' => 'John Doe',
+            'email' => 'john@doe.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ];
+
+        $response = $this->postJson(route('register'), $userData);
+
+        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $response->assertJsonValidationErrors("general");
+
+        $this->assertDatabaseMissing(User::class, [
             'name' => 'John Doe',
             'email' => 'john@doe.com',
         ]);
