@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
+    libwebp-dev \
     libicu-dev \
     autoconf \
     gcc \
@@ -24,7 +25,7 @@ RUN apt-get update && apt-get install -y \
 #   gd              -> Intervention Image (profile pictures)
 #   intl            -> Laravel's underlying string/locale handling
 #   pcntl           -> SIGINT, SIGTERM, SIGTSTP are needed for reverb
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip gd intl pcntl
 
 # phpredis isn't bundled with PHP core — install via PECL.
