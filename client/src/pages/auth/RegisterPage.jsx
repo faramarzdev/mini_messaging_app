@@ -11,6 +11,7 @@ import {
 } from "../../components/icons/AuthIcons";
 import { isValidEmail, isValidPassword } from "../../utils/validation";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { ROUTES } from "../../routes/paths.js";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -54,7 +55,7 @@ export default function RegisterPage() {
 
     try {
       await register(name, email, password, confirmPassword);
-      navigate("/app"); // registration would log user in too
+      navigate(ROUTES.app); // registration would log user in too
     } catch (err) {
       setErrors([getErrorMessage(err)]);
     } finally {
@@ -205,7 +206,7 @@ export default function RegisterPage() {
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
           Already have an account?
           <Link
-            to="/auth/login"
+            to={ROUTES.authLogin}
             id="switch-to-login"
             className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline ml-1"
           >

@@ -1,12 +1,13 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { ROUTES } from "../../routes/paths.js";
 
 export default function AuthLayout() {
   const { user, loading } = useAuth();
 
   if (loading) return null;
 
-  if (user) return <Navigate to="/app/" replace />;
+  if (user) return <Navigate to={ROUTES.app} replace />;
 
   return (
     <div className="h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">

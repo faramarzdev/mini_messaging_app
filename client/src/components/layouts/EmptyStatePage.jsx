@@ -1,7 +1,5 @@
-/**
- * EmptyStatePage
- * Shown in the main panel when no conversation is selected.
- */
+import { Link } from "react-router-dom";
+import { ROUTES } from "../../routes/paths.js";
 export default function EmptyStatePage() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-950 select-none">
@@ -15,10 +13,13 @@ export default function EmptyStatePage() {
         Choose from your existing conversations or start a new one.
       </p>
 
-      <button className="mt-6 flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full shadow transition-colors">
+      <Link
+        to={ROUTES.appContacts}
+        className="mt-6 flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full shadow transition-colors"
+      >
         <PencilIcon className="w-4 h-4" />
         New Message
-      </button>
+      </Link>
     </div>
   );
 }

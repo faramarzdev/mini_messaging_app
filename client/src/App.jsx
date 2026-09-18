@@ -10,32 +10,33 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import HomePage from "./pages/HomePage";
+import { ROUTES } from "./routes/paths";
 
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: ROUTES.home,
     element: <HomePage />,
   },
   {
-    path: "/app",
+    path: ROUTES.app,
     element: <AppLayout />,
     children: [
       { index: true, element: <EmptyStatePage /> },
-      { path: "/app/contacts", element: <div>Contacts page</div> },
-      { path: "/app/chat/:id", element: <div>Chat page</div> },
-      { path: "/app/profile/:id", element: <div>Profile page</div> },
+      { path: ROUTES.appContacts, element: <div>Contacts page</div> },
+      { path: ROUTES.appChat, element: <div>Chat page</div> },
+      { path: ROUTES.appProfile, element: <div>Profile page</div> },
     ],
   },
   {
-    path: "/auth",
+    path: ROUTES.auth,
     element: <AuthLayout />,
     children: [
-      { path: "/auth/login", element: <LoginPage /> },
-      { path: "/auth/register", element: <RegisterPage /> },
-      { path: "/auth/forgot-password", element: <ForgotPasswordPage /> },
-      { path: "/auth/reset-password", element: <ResetPasswordPage /> },
+      { path: ROUTES.authLogin, element: <LoginPage /> },
+      { path: ROUTES.authRegister, element: <RegisterPage /> },
+      { path: ROUTES.authForgotPassword, element: <ForgotPasswordPage /> },
+      { path: ROUTES.authResetPassword, element: <ResetPasswordPage /> },
     ],
   },
 ]);
