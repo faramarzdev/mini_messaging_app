@@ -3,6 +3,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    image: chat-api
     command: php artisan serve --host=0.0.0.0 --port=8000
     ports:
       - "${APP_PORT:-8000}:8000"
@@ -11,26 +12,32 @@ services:
     env_file:
       - ./api/.env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   queue:
     build:
       context: ./api
       dockerfile: Dockerfile
+    image: chat-api
     command: php artisan queue:work --tries=1
     volumes:
       - ./api:/var/www/html
     env_file:
       - ./api/.env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   reverb:
     build:
       context: ./api
       dockerfile: Dockerfile
+    image: chat-api
     command: php artisan reverb:start --host=0.0.0.0 --port=8080
     ports:
       - "${REVERB_PORT:-8080}:8080"
@@ -39,8 +46,10 @@ services:
     env_file:
       - ./api/.env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   postgres:
     image: postgres:16-alpine
@@ -51,9 +60,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./api/docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   redis:
     image: redis:7-alpine
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
 
 volumes:
   postgres_data:
