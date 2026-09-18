@@ -1,17 +1,27 @@
 import { Navigate, Outlet } from "react-router-dom";
 import Sidebar from "../Sidebar";
 import { useAuth } from "../../context/AuthContext";
+import useConversations from "../../hooks/useConversations";
+import LoadingOverlay from "../ui/LoadingOverlay";
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
+  const {
+    conversations,
+    isLoading: conversationsLoading,
+    error,
+  } = useConversations();
 
-  if (loading) return null;
-
+  if (loading) return <LoadingOverlay />;
   if (!user) return <Navigate to="/auth/login" replace />;
 
   return (
     <div className="flex h-full w-full overflow-hidden">
-      <Sidebar />
+      <Sidebar
+        conversations={conversations}
+        isConversationsLoading={conversationsLoading}
+        conversationsErrors={error}
+      />
       <main className="flex flex-1 min-w-0 overflow-hidden relative">
         <Outlet />
       </main>
