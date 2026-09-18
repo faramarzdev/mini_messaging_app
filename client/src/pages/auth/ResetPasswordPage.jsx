@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { LockIcon, ConfirmPasswordIcon } from "../../components/icons/AuthIcons";
 import { isValidEmail, isValidPassword } from "../../utils/validation";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import {ROUTES} from "../../routes/paths.js";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -92,7 +93,7 @@ export default function ResetPasswordPage() {
         {successMessage ? (
           <div className="text-center text-sm text-green-600 dark:text-green-400 mb-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
             A password reset link has been sent to your email. you need to login
-            with new password. <Link to="/auth/login">Login</Link>
+            with new password. <Link to={ROUTES.authLogin}>Login</Link>
           </div>
         ) : (
           <form

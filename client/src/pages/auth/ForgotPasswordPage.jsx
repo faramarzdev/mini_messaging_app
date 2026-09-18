@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { MailIcon } from "../../components/icons/AuthIcons";
 import { isValidEmail } from "../../utils/validation";
 import { getErrorMessage } from "../../utils/getErrorMessage";
+import { ROUTES } from "../../routes/paths.js";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -110,7 +111,7 @@ export default function ForgotPasswordPage() {
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
           Don't have an account?
           <Link
-            to="/auth/register"
+            to={ROUTES.authRegister}
             className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline ml-1"
           >
             Sign up

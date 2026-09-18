@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
 import formatConversationTime from "../utils/formatConversationTime";
+import { ROUTES } from "../routes/paths.js";
 
 export default function ConversationItem({ conversation, loggedInUserId }) {
   return (
     <NavLink
-      to={`/app/chat/${conversation.id}`}
+      to={ROUTES.chatPath(conversation.id)}
       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
     >
       {conversation.profile.picture_url ? (

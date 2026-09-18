@@ -3,6 +3,7 @@ import Sidebar from "../Sidebar";
 import { useAuth } from "../../context/AuthContext";
 import useConversations from "../../hooks/useConversations";
 import LoadingOverlay from "../ui/LoadingOverlay";
+import { ROUTES } from "../../routes/paths.js";
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
@@ -13,7 +14,7 @@ export default function AppLayout() {
   } = useConversations();
 
   if (loading) return <LoadingOverlay />;
-  if (!user) return <Navigate to="/auth/login" replace />;
+  if (!user) return <Navigate to={ROUTES.authLogin} replace />;
 
   return (
     <div className="flex h-full w-full overflow-hidden">

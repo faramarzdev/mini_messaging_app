@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ConversationItem from "./ConversationItem";
 import ConversationsSkeleton from "./skeletons/ConversationsSkeleton";
+import { ROUTES } from "../routes/paths.js";
 
 export default function Sidebar({
   conversations,
@@ -33,7 +34,7 @@ export default function Sidebar({
     setMenuOpen(false);
     logout();
     localStorage.removeItem("auth_token");
-    window.location.href = "/auth/login";
+    window.location.href = ROUTES.authLogin;
   };
 
   return (
@@ -78,7 +79,10 @@ export default function Sidebar({
               <MenuItem
                 icon={<NewChatIcon />}
                 label="New Message"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  navigate(ROUTES.appContacts);
+                  setMenuOpen(false);
+                }}
               />
               <div className="border-t border-gray-100 dark:border-gray-700" />
               <MenuItem
@@ -138,12 +142,13 @@ export default function Sidebar({
 
       {/* ── Footer: compose button ── */}
       <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-        <button
+        <Link
+          to={ROUTES.appContacts}
           className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
           aria-label="New conversation"
         >
           <PencilIcon className="w-5 h-5" />
-        </button>
+        </Link>
       </div>
     </aside>
   );
