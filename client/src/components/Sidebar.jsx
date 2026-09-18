@@ -2,8 +2,14 @@ import { useEffect, useState, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ConversationItem from "./ConversationItem";
+import ConversationsSkeleton from "./skeletons/ConversationsSkeleton";
 
-export default function Sidebar() {
+export default function Sidebar({
+  conversations,
+  isConversationsLoading,
+  conversationsErrors,
+}) {
   const { dark, toggle: toggleDark } = useTheme();
   const navigate = useNavigate();
 
@@ -11,7 +17,6 @@ export default function Sidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const { user, logout } = useAuth();
-  
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -108,9 +113,27 @@ export default function Sidebar() {
 
       {/* ── Contact list ── */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        <p className="text-center text-sm text-gray-400 dark:text-gray-500 mt-12 px-6">
-          No conversations found
-        </p>
+        {isConversationsLoading ? (
+          <div className="mt-5 mx-3">
+            <ConversationsSkeleton />
+          </div>
+        ) : conversationsErrors ? (
+          <p className="text-center text-sm text-red-500 mt-12 px-6">
+            Error loading conversations
+          </p>
+        ) : conversations.length ? (
+          conversations.map((conversation) => (
+            <ConversationItem
+              key={conversation.id}
+              conversation={conversation}
+              loggedInUserId={user.id}
+            />
+          ))
+        ) : (
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500 mt-12 px-6">
+            No conversations found
+          </p>
+        )}
       </div>
 
       {/* ── Footer: compose button ── */}
