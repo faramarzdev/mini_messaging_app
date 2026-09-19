@@ -14,21 +14,26 @@ class MessageResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $profile = $request->currentProfile();
         return [
             'id' => $this->id,
-            'sender' => $this->whenLoaded('sender', fn () => $this->sender, $this->sender_id),
-            'is_available_on_sender' => $this->is_available_on_sender,
-            /*
-            'conversation' => $this->whenLoaded('conversation', fn() => $this->conversation, $this->conversation_id),
-            'messageable_id' => $this->whenLoaded(''),
-            */
-            'is_available_on_receiver' => $this->is_available_on_receiver,
+            'sender' => $this->whenLoaded('sender', fn() => $this->sender, $this->sender_id),
             'body' => $this->body,
             'type' => $this->type,
-            // 'medias' => $this->, // currently not implemented, todo: implemented
-            'is_read' => $this->is_read,
+            // 'medias' => $this->, // currently not implemented, todo: implement it
+            'is_read' => $this->isRead($profile->id),
             'created_at' => $this->created_at?->format('Y-m-d H:i'),
-            'reply' => $this->whenLoaded('replyMessage', fn () => $this->replyMessage, null),
+            'reply' => $this->whenLoaded('replyMessage', fn() => $this->replyMessage, null),
         ];
     }
+
+    protected function isRead(?int $profileId): bool|null
+    {
+        // return null if message is not send by current profile
+        if ($this->sender_id != $profileId) {
+            return null;
+        }
+        return (bool) $this->is_read;
+    }
+
 }
