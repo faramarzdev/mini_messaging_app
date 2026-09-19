@@ -17,7 +17,10 @@ class UserResource extends JsonResource
         $toReturn = [
             'id' => $this->id,
             'name' => $this->name,
-            // 'role' => $this->role
+            'profile' => $this->whenLoaded('profile', fn () => [
+                'id' => $this->profile->id,
+                'handle' => $this->profile->handle,
+            ]),
         ];
         if ($request->user()?->id === $this->id || $request->user()?->role === 'admin') {
             $toReturn['email'] = $this->email;
