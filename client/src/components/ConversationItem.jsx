@@ -5,7 +5,7 @@ import { ROUTES } from "../routes/paths.js";
 export default function ConversationItem({ conversation, loggedInUserId }) {
   return (
     <NavLink
-      to={ROUTES.chatPath(conversation.id)}
+      to={ROUTES.profilePathMessage(conversation.profile.handle)}
       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
     >
       {conversation.profile.picture_url ? (

@@ -9,9 +9,10 @@ export const ROUTES = {
 
   app: "/app",
   appContacts: "/app/contacts",
-  appChat: "/app/chat/:id",
-  chatPath: (id) => `/app/chat/${id}`,
 
-  appProfile: "/app/profile/:id",
-  profilePath: (id) => `/app/profile/${id}`,
+  appProfile: "/app/profile/:handle",
+  profilePath: (handle) => `/app/profile/${handle}`,
+
+  appProfileMessage: "/app/profile/:handle/message",
+  profilePathMessage: (handle) => `/app/profile/${handle}/message`,
 };
