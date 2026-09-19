@@ -11,7 +11,7 @@ A real-time messaging app: direct messages, public/private channels, role-based 
 ## Tech Stack
 
 **Backend**
-- PHP 8.2+ / Laravel 12
+- PHP 8.4+ / Laravel 12
 - Laravel Sanctum (token auth)
 - PostgreSQL 16 (all environments, via Docker) / Redis 7
 - Laravel Reverb (WebSocket broadcasting)
