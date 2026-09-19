@@ -12,6 +12,8 @@
   "dependencies": {
     "@tanstack/react-query": "^5.101.1",
     "axios": "^1.18.1",
+    "laravel-echo": "^2.3.7",
+    "pusher-js": "^8.5.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0"
@@ -22,14 +24,10 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
-    "autoprefixer": "^10.5.1",
     "eslint": "^10.5.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.6.0",
-    "laravel-echo": "^2.3.7",
-    "postcss": "^8.5.15",
-    "pusher-js": "^8.5.0",
     "tailwindcss": "^4.3.1",
     "vite": "^8.1.0"
   }
