@@ -25,7 +25,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <EmptyStatePage /> },
       { path: ROUTES.appContacts, element: <div>Contacts page</div> },
-      { path: ROUTES.appChat, element: <div>Chat page</div> },
+      { path: ROUTES.appProfileMessage, element: <div>Chat page</div> },
       { path: ROUTES.appProfile, element: <div>Profile page</div> },
     ],
   },
