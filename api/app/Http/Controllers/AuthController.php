@@ -24,7 +24,7 @@ class AuthController extends Controller
     public function register(AuthRegisterRequest $request): JsonResponse
     {
         $canRegister = config('auth.is_registration_allowed');
-        if (! $canRegister) {
+        if (!$canRegister) {
             throw ValidationException::withMessages([
                 'general' => ['Registration is currently closed.'],
             ]);
@@ -40,6 +40,8 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
         Mail::to($user)->send(new WelcomeEmail($user));
 
+        $user->load('profile');
+
         return response()->json([
             'user' => new UserResource($user),
             'token' => $token,
@@ -52,13 +54,15 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        $user->load('profile');
 
         return response()->json([
             'user' => new UserResource($user),
@@ -78,7 +82,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'user' => new UserResource($request->user()),
+            'user' => new UserResource($request->user()->load('profile')),
         ], Response::HTTP_OK);
     }
 
