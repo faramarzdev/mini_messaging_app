@@ -1,12 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import {
-  loginRequest,
-  registerRequest,
-  logoutRequest,
-  getMe,
-  forgotPasswordRequest,
-  resetPasswordRequest,
-} from "../api/auth";
+import {createContext, useContext, useEffect, useState} from "react";
+import {forgotPasswordRequest, getMe, loginRequest, logoutRequest, registerRequest, resetPasswordRequest,} from "../api/auth";
 
 const AuthContext = createContext(null);
 
@@ -21,7 +14,7 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const userData = await getMe();
+      const {user: userData} = await getMe();
       setUser(userData);
     } catch {
       localStorage.removeItem("auth_token");
@@ -38,8 +31,7 @@ export function AuthProvider({ children }) {
   };
 
   const forgotPassword = async (email) => {
-    const response = await forgotPasswordRequest(email);
-    return response;
+    return await forgotPasswordRequest(email);
   };
 
   const resetPassword = async (
