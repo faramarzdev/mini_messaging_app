@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import formatConversationTime from "../utils/formatConversationTime";
 import { ROUTES } from "../routes/paths.js";
+import Avatar from "./Avatar.jsx";
 
 export default function ConversationItem({ conversation, loggedInUserId }) {
   return (
@@ -8,19 +9,8 @@ export default function ConversationItem({ conversation, loggedInUserId }) {
       to={ROUTES.profilePathMessage(conversation.profile.handle)}
       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
     >
-      {conversation.profile.picture_url ? (
-        <img
-          src={conversation.profile.picture_url}
-          alt={conversation.profile.name}
-          className="w-10 h-10 rounded-full"
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-          <span className="text-lg font-bold text-gray-600 dark:text-gray-300">
-            {conversation.profile.name.charAt(0)}
-          </span>
-        </div>
-      )}
+      <Avatar profile={conversation.profile} />
+
       <div className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-300">
         <div className="flex justify-between w-full font-bold">
           <span>{conversation.profile.name}</span>
