@@ -17,13 +17,8 @@ class ChatItemResource extends JsonResource
         return [
             'id' => $this->id,
             'type' => $this->type,
-            'profile' => [
-                'handle' => $this->profile->handle,
-                'picture_url' => $this->profile->picture_url,
-                'name' => $this->type === 'channel'
-                    ? $this->name
-                    : $this->profile->profileable->name,
-            ],
+            'profile' => new ProfileResource($this->profile),
+
             'last_message' => $this->lastMessage
                 ? new MessageResource($this->lastMessage)
                 : null,

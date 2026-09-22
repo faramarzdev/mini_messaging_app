@@ -124,7 +124,7 @@ class ChatTest extends TestCase
         $this->assertArrayHasKey('id', $item);
         $this->assertArrayHasKey('profile', $item);
         $this->assertArrayHasKey('handle', $item['profile']);
-        $this->assertArrayHasKey('picture_url', $item['profile']);
+        $this->assertArrayHasKey('featured_picture', $item['profile']);
         $this->assertArrayHasKey('last_message', $item);
         $this->assertArrayHasKey('unread_count', $item);
     }
