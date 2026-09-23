@@ -17,7 +17,7 @@ class MessageResource extends JsonResource
         $profile = $request->currentProfile();
         return [
             'id' => $this->id,
-            'sender' => $this->whenLoaded('sender', fn() => $this->sender, $this->sender_id),
+            'sender' => $this->whenLoaded('sender', new ProfileResource($this->sender)),
             'body' => $this->body,
             'type' => $this->type,
             // 'medias' => $this->, // currently not implemented, todo: implement it
