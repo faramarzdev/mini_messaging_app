@@ -130,7 +130,7 @@ export default function Sidebar({
             <ConversationItem
               key={conversation.id}
               conversation={conversation}
-              loggedInUserId={user.id}
+              loggedInUser={user}
             />
           ))
         ) : (

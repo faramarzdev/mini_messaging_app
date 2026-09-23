@@ -3,7 +3,7 @@ import formatConversationTime from "../utils/formatConversationTime";
 import { ROUTES } from "../routes/paths.js";
 import Avatar from "./Avatar.jsx";
 
-export default function ConversationItem({ conversation, loggedInUserId }) {
+export default function ConversationItem({ conversation, loggedInUser }) {
   return (
     <NavLink
       to={ROUTES.profilePathMessage(conversation.profile.handle)}
@@ -26,7 +26,7 @@ export default function ConversationItem({ conversation, loggedInUserId }) {
               <>
                 {/* todo: Add proper sender name display (specifically when it is in group) */}
                 <span className="font-bold text-gray-500 dark:text-gray-300">
-                  {conversation.last_message.sender === loggedInUserId &&
+                  {conversation.last_message.sender.handle === loggedInUser.handle &&
                     "You: "}
                 </span>
                 {conversation.last_message.body}
