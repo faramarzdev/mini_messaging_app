@@ -171,12 +171,12 @@ class ChannelTest extends TestCase
         $this->assertDatabaseCount(Message::class, 0);
         $messageOne = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
-                'receiver_id' => $channelProfile->id,
+                'receiver_handle' => $channelProfile->handle,
                 'body' => 'this is a test message',
             ])->assertStatus(Response::HTTP_CREATED);
         $messageTwo = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
-                'receiver_id' => $channelProfile->id,
+                'receiver_handle' => $channelProfile->handle,
                 'body' => 'this is a test message',
             ])->assertStatus(Response::HTTP_CREATED);
         $this->assertNotSoftDeleted(Message::class, [

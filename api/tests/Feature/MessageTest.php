@@ -44,7 +44,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -73,7 +73,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -99,7 +99,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -126,7 +126,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -150,14 +150,14 @@ class MessageTest extends TestCase
         $this->assertDatabaseCount(Message::class, 0);
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
         $firstMessageId = $response->json()['id'];
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ])->assertStatus(Response::HTTP_CREATED);
         $lastMessageId = $response->json()['id'];
@@ -202,7 +202,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -214,7 +214,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -254,7 +254,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => '',
             ]);
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -262,7 +262,6 @@ class MessageTest extends TestCase
         $this->assertDatabaseMissing(Message::class, [
             'sender_id' => $sender->id,
             'is_available_on_sender' => 1,
-            // 'receiver_id' => $receiver->id,
             'is_available_on_receiver' => 1,
             'body' => '',
         ]);
@@ -287,27 +286,27 @@ class MessageTest extends TestCase
 
         $this->actingAs($lowerUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $higher->id,
+                'receiver_handle' => $higher->handle,
                 'body' => 'test message',
             ]);
         $this->actingAs($lowerUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $higher->id,
+                'receiver_handle' => $higher->handle,
                 'body' => 'test message two',
             ]);
         $this->actingAs($lowerUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $higher->id,
+                'receiver_handle' => $higher->handle,
                 'body' => 'test message three',
             ]);
         $this->actingAs($higherUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $lower->id,
+                'receiver_handle' => $lower->handle,
                 'body' => 'test message four',
             ]);
         $this->actingAs($higherUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $lower->id,
+                'receiver_handle' => $lower->handle,
                 'body' => 'test message five',
             ]);
         $this->assertDatabaseCount(Message::class, 5);
@@ -371,12 +370,12 @@ class MessageTest extends TestCase
         ], $channelOwner);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
             ]);
 
@@ -405,12 +404,12 @@ class MessageTest extends TestCase
         ], $channelOwner);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
             ]);
 
@@ -439,12 +438,12 @@ class MessageTest extends TestCase
         ], $channelOwner);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
             ]);
 
@@ -472,12 +471,12 @@ class MessageTest extends TestCase
         ], $channelOwner);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
             ]);
 
@@ -505,12 +504,12 @@ class MessageTest extends TestCase
         ], $channelOwner);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'should be fetched',
             ]);
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'should be fetched two',
             ]);
         $newChannelOwner = User::factory()->create();
@@ -522,12 +521,12 @@ class MessageTest extends TestCase
         ], $newChannelOwner);
         $this->actingAs($newChannelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $newChannel->profile->id,
+                'receiver_handle' => $newChannel->profile->handle,
                 'body' => 'not to be fetched',
             ]);
         $this->actingAs($newChannelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $newChannel->profile->id,
+                'receiver_handle' => $newChannel->profile->handle,
                 'body' => 'not to be fetched two',
             ]);
 
@@ -567,12 +566,12 @@ class MessageTest extends TestCase
 
         $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'should be fetched',
             ]);
         $message = $this->actingAs($channelOwner)
             ->postJson(route('message.store'), [
-                'receiver_id' => $channel->profile->id,
+                'receiver_handle' => $channel->profile->handle,
                 'body' => 'not to be fetched',
             ]);
 
@@ -773,7 +772,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
@@ -841,7 +840,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
 
@@ -876,12 +875,11 @@ class MessageTest extends TestCase
 
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
-        $receiverUser = User::factory()->create();
-        $receiver = $receiverUser->profile;
+        $receiver = User::factory()->create();
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->profile->handle,
                 'body' => 'test message',
             ]);
 
@@ -894,7 +892,7 @@ class MessageTest extends TestCase
             'is_available_on_receiver' => true,
         ]);
 
-        $response = $this->actingAs($receiverUser, 'sanctum')
+        $response = $this->actingAs($receiver, 'sanctum')
             ->deleteJson(route('message.hide', $message['id']));
         $response->assertStatus(Response::HTTP_NO_CONTENT);
 
@@ -919,7 +917,7 @@ class MessageTest extends TestCase
 
         $response = $this->actingAs($senderUser)
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->id,
+                'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
 
@@ -1033,7 +1031,7 @@ class MessageTest extends TestCase
 
         $this->actingAs($sender, 'sanctum')
             ->postJson(route('message.store'), [
-                'receiver_id' => $receiver->profile->id,
+                'receiver_handle' => $receiver->profile->handle,
                 'body' => 'Hello there',
             ])
             ->assertStatus(Response::HTTP_CREATED);
@@ -1069,7 +1067,7 @@ class MessageTest extends TestCase
 
         $messageResponse = $this->actingAs($sender, 'sanctum')
             ->postJson(route('message.store'), [
-                'receiver_id' => $reader->profile->id,
+                'receiver_handle' => $reader->profile->handle,
                 'body' => 'Hello there',
             ]);
         $messageResponse->assertStatus(Response::HTTP_CREATED);

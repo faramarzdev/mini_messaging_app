@@ -31,18 +31,18 @@ class MessageFactory extends Factory
             $sender_id = $sender->id;
         }
 
-        if ($this->state['receiver_id'] ?? false) {
-            $receiver_id = $this->state['receiver_id'];
+        if ($this->state['receiver_handle'] ?? false) {
+            $receiver_handle = $this->state['receiver_handle'];
         } else {
             $user = User::factory()->create();
             $receiver = Profile::where('profileable_type', ProfileableTypes::User->value)
                 ->where('profileable_id', $user->id)->first();
-            $receiver_id = $receiver->id;
+            $receiver_handle = $receiver->id;
         }
 
         [$lowerId, $higherId] = Conversation::normalizeProfiles(
             $sender_id,
-            $receiver_id
+            $receiver_handle
         );
 
         return [
