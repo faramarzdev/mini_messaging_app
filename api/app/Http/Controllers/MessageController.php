@@ -58,7 +58,7 @@ class MessageController extends Controller
         $validated = $request->validated();
 
         $profile = $request->currentProfile();
-        $receiverProfile = Profile::findOrFail($validated['receiver_id']);
+        $receiverProfile = Profile::where('handle', $validated['receiver_handle'])->firstOrFail();
 
         // todo: implement and check if the sender is not blocked by the receiver.
 

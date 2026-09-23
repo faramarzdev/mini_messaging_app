@@ -26,9 +26,9 @@ class StoreMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'receiver_id' => [
+            'receiver_handle' => [
                 'required',
-                Rule::exists(Profile::class, 'id'),
+                Rule::exists(Profile::class, 'handle'),
             ],
             'body' => ['required', 'string', 'min:3', 'max:2047'],
             'medias' => ['sometimes', 'array'],
