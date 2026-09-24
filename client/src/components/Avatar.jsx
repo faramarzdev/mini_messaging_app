@@ -1,9 +1,9 @@
 export default function Avatar({ profile }) {
   return (
     <>
-      {profile.picture_url ? (
+      {profile.featured_picture ? (
         <img
-          src={profile.picture_url}
+          src={profile.featured_picture}
           alt={profile.name}
           className="w-10 h-10 rounded-full"
         />
