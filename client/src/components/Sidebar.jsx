@@ -141,7 +141,7 @@ export default function Sidebar({
       </div>
 
       {/* ── Footer: compose button ── */}
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+      <div className="p-2 border-t border-gray-200 dark:border-gray-700 flex justify-end">
         <Link
           to={ROUTES.appContacts}
           className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
