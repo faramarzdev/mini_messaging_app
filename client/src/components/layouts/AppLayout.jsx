@@ -23,7 +23,7 @@ export default function AppLayout() {
         isConversationsLoading={conversationsLoading}
         conversationsErrors={error}
       />
-      <main className="flex flex-1 min-w-0 overflow-hidden relative">
+      <main className="flex flex-1 min-w-0 overflow-hidden h-full bg-gray-50 dark:bg-gray-950 dark:text-gray-300">
         <Outlet />
       </main>
     </div>
