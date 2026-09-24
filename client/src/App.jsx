@@ -11,6 +11,7 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import HomePage from "./pages/HomePage";
 import { ROUTES } from "./routes/paths";
+import ChatPage from "./pages/chat/ChatPage";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <EmptyStatePage /> },
       { path: ROUTES.appContacts, element: <div>Contacts page</div> },
-      { path: ROUTES.appProfileMessage, element: <div>Chat page</div> },
+      { path: ROUTES.appProfileMessage, element: <ChatPage /> },
       { path: ROUTES.appProfile, element: <div>Profile page</div> },
     ],
   },
