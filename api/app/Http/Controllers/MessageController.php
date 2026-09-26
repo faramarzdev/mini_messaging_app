@@ -7,6 +7,7 @@ use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
 use App\Events\MessageRead;
 use App\Events\MessageSent;
+use App\Http\Requests\IndexMessageRequest;
 use App\Http\Requests\StoreMessageRequest;
 use App\Http\Requests\UpdateMessageRequest;
 use App\Http\Resources\MessageCollection;
@@ -29,28 +30,30 @@ class MessageController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, Profile $profile)
+    public function index(IndexMessageRequest $request, Profile $profile)
     {
         $this->authorize('viewMessages', [Message::class, $profile]);
         $viewerProfile = $request->currentProfile();
 
         $messageable = MessageService::resolveMessageable($profile, $viewerProfile);
-        if (! $messageable) {
+        if (!$messageable) {
             return response()->json(['message' => 'No conversation or channel found'], Response::HTTP_NOT_FOUND);
         }
 
-        $messages = MessageService::getMessagesAroundAnchor(
-            $messageable,
-            $viewerProfile,
-            $request->input('anchor_message_id')
+        $validated = $request->validated();
+
+        $page = MessageService::getMessagesAroundAnchor(
+            messageable: $messageable,
+            viewerProfile: $viewerProfile,
+            anchorId: $validated['anchor_message_id'] ?? null,
+            direction: $validated['direction'] ?? 'down',
+            search: $validated['search'] ?? null,
         );
 
-        return response()->json(new MessageCollection($messages), Response::HTTP_OK);
+        return response()->json(new MessageCollection($page), Response::HTTP_OK);
     }
 
-    /**
-     * save message.
-     */
+
     public function store(StoreMessageRequest $request): JsonResponse
     {
         $this->authorize('create', Message::class);
@@ -98,19 +101,22 @@ class MessageController extends Controller
                     $toUpdate['is_available_for_lower_profile'] = true;
                     $toUpdate['is_available_for_higher_profile'] = true;
 
-                    if (! $conversation->lower_profile_last_read_message_id) {
+                    if (!$conversation->lower_profile_last_read_message_id) {
                         $toUpdate['lower_profile_last_read_message_id'] = $message->id;
                     }
-                    if (! $conversation->higher_profile_last_read_message_id) {
+                    if (!$conversation->higher_profile_last_read_message_id) {
                         $toUpdate['higher_profile_last_read_message_id'] = $message->id;
                     }
 
                 }
+                // update user anchor
 
                 $messageable->update($toUpdate);
 
                 return $message;
             });
+
+            $message->loadMissing(['sender.profileable', 'sender.featuredPicture', 'messageable']);
 
             MessageSent::dispatch($message);
 
@@ -195,27 +201,6 @@ class MessageController extends Controller
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
 
-    public function search(Request $request, Profile $profile): JsonResponse
-    {
-        $this->authorize('viewMessages', [Message::class, $profile]);
-
-        $viewerProfile = $request->currentProfile();
-
-        $messageable = MessageService::resolveMessageable($profile, $viewerProfile);
-
-        if (! $messageable) {
-            return response()->json(['message' => 'No conversation or channel found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $messages = MessageService::getMessagesAroundAnchor(
-            $messageable,
-            $viewerProfile,
-            null,
-            $request->input('search')
-        );
-
-        return response()->json(new MessageCollection($messages), Response::HTTP_OK);
-    }
 
     /**
      * real-time event; no impact/change on any models
@@ -228,7 +213,7 @@ class MessageController extends Controller
         $readerProfile = $request->currentProfile();
         if ($message->messageable instanceof Conversation) {
             $conversation = $message->messageable;
-            if (! in_array($readerProfile->id, $conversation->connectedProfilesIds())) {
+            if (!in_array($readerProfile->id, $conversation->connectedProfilesIds())) {
                 return response()->json([], Response::HTTP_FORBIDDEN);
             }
 
@@ -236,7 +221,7 @@ class MessageController extends Controller
             if ($isLowerProfile && $conversation->lower_profile_last_read_message_id < $message->id) {
                 $conversation->update(['lower_profile_last_read_message_id' => $message->id]);
 
-            } elseif (! $isLowerProfile && $conversation->higher_profile_last_read_message_id < $message->id) {
+            } elseif (!$isLowerProfile && $conversation->higher_profile_last_read_message_id < $message->id) {
                 $conversation->update(['higher_profile_last_read_message_id' => $message->id]);
             }
 

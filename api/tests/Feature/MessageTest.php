@@ -26,23 +26,21 @@ class MessageTest extends TestCase
 {
     use RefreshDatabase;
 
-    /* protected function setUp(): void
-     {
-         parent::setUp();
-         $this->migrateDatabases();
-     }*/
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Event::fake([MessageSent::class, MessageRead::class]);
+    }
 
     #[Test]
     public function user_can_message_other_user()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiver_user = User::factory()->create();
         $receiver = $receiver_user->profile;
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
@@ -60,8 +58,6 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_message_channels_with_permission()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $channelOwner = User::factory()->create();
         $ownerProfile = $channelOwner->profile;
         $channelService = app(ChannelService::class);
@@ -71,7 +67,7 @@ class MessageTest extends TestCase
 
         ], $channelOwner);
 
-        $response = $this->actingAs($channelOwner)
+        $response = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
@@ -89,15 +85,13 @@ class MessageTest extends TestCase
     #[Test]
     public function sending_message_update_last_message_id()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         // for conversations
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiver_user = User::factory()->create();
         $receiver = $receiver_user->profile;
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
@@ -124,7 +118,7 @@ class MessageTest extends TestCase
             'last_message_id' => null,
         ]);
 
-        $response = $this->actingAs($channelOwner)
+        $response = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
@@ -140,22 +134,20 @@ class MessageTest extends TestCase
     #[Test]
     public function message_removal_update_last_message_id()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         // for conversations
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiver_user = User::factory()->create();
         $receiver = $receiver_user->profile;
         $this->assertDatabaseCount(Message::class, 0);
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
             ]);
         $response->assertStatus(Response::HTTP_CREATED);
         $firstMessageId = $response->json()['id'];
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
@@ -168,7 +160,7 @@ class MessageTest extends TestCase
             'last_message_id' => $lastMessageId,
         ]);
 
-        $this->actingAs($senderUser)
+        $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.destroy', $lastMessageId))
             ->assertStatus(Response::HTTP_NO_CONTENT);
         $this->assertDatabaseHas(Conversation::class, [
@@ -177,7 +169,7 @@ class MessageTest extends TestCase
             'last_message_id' => $firstMessageId,
         ]);
 
-        $this->actingAs($senderUser)
+        $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.destroy', $firstMessageId))
             ->assertStatus(Response::HTTP_NO_CONTENT);
         $this->assertDatabaseHas(Conversation::class, [
@@ -200,7 +192,7 @@ class MessageTest extends TestCase
             'last_message_id' => null,
         ]);
 
-        $response = $this->actingAs($channelOwner)
+        $response = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
@@ -212,7 +204,7 @@ class MessageTest extends TestCase
             'last_message_id' => $firstMessageId,
         ]);
 
-        $response = $this->actingAs($channelOwner)
+        $response = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
@@ -224,7 +216,7 @@ class MessageTest extends TestCase
             'last_message_id' => $lastMessageId,
         ]);
 
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->deleteJson(route('message.destroy', $lastMessageId))
             ->assertStatus(Response::HTTP_NO_CONTENT);
         $this->assertDatabaseHas(Channel::class, [
@@ -232,7 +224,7 @@ class MessageTest extends TestCase
             'last_message_id' => $firstMessageId,
         ]);
 
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->deleteJson(route('message.destroy', $firstMessageId))
             ->assertStatus(Response::HTTP_NO_CONTENT);
 
@@ -252,7 +244,7 @@ class MessageTest extends TestCase
         $receiver_user = User::factory()->create();
         $receiver = $receiver_user->profile;
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => '',
@@ -269,13 +261,12 @@ class MessageTest extends TestCase
 
     }
 
-    // test_user_cannot_send_message_to_user_they_got_blocked
+    // user_cannot_send_message_to_user_they_got_blocked
     //
-    // test_cannot_send_message_with_invalid_payload
-    // test_message_creation_persists_correct_attributes
-    // test_message_creation_triggers_events (optional if you use events/queues)
+    // cannot_send_message_with_invalid_payload
+    // message_creation_persists_correct_attributes
     //
-    // Retrieval / Listing
+
     #[Test]
     public function user_can_fetch_dm_messages()
     {
@@ -284,36 +275,19 @@ class MessageTest extends TestCase
         $higherUser = User::factory()->create();
         $higher = $higherUser->profile;
 
-        $this->actingAs($lowerUser)
-            ->postJson(route('message.store'), [
-                'receiver_handle' => $higher->handle,
-                'body' => 'test message',
-            ]);
-        $this->actingAs($lowerUser)
-            ->postJson(route('message.store'), [
-                'receiver_handle' => $higher->handle,
-                'body' => 'test message two',
-            ]);
-        $this->actingAs($lowerUser)
-            ->postJson(route('message.store'), [
-                'receiver_handle' => $higher->handle,
-                'body' => 'test message three',
-            ]);
-        $this->actingAs($higherUser)
-            ->postJson(route('message.store'), [
-                'receiver_handle' => $lower->handle,
-                'body' => 'test message four',
-            ]);
-        $this->actingAs($higherUser)
-            ->postJson(route('message.store'), [
-                'receiver_handle' => $lower->handle,
-                'body' => 'test message five',
-            ]);
+        foreach (['one', 'two', 'three', 'four', 'five'] as $messageBody) {
+            $this->actingAs($lowerUser, 'sanctum')
+                ->postJson(route('message.store'), [
+                    'receiver_handle' => $higher->handle,
+                    'body' => $messageBody,
+                ]);
+        }
+
         $this->assertDatabaseCount(Message::class, 5);
         Message::factory(10)->create();
         $this->assertDatabaseCount(Message::class, 15);
 
-        $response = $this->actingAs($lowerUser)
+        $response = $this->actingAs($lowerUser, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $higher->handle]));
 
         $response->assertStatus(Response::HTTP_OK);
@@ -368,12 +342,12 @@ class MessageTest extends TestCase
             'description' => 'test channel description',
 
         ], $channelOwner);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
@@ -386,7 +360,7 @@ class MessageTest extends TestCase
             'status' => ChannelMemberStatus::Approved->value,
         ])->create();
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJsonCount(2, 'data');
@@ -402,12 +376,12 @@ class MessageTest extends TestCase
             'description' => 'test channel description',
             'visibility' => ChannelVisibility::Private->value,
         ], $channelOwner);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
@@ -420,7 +394,7 @@ class MessageTest extends TestCase
             'status' => ChannelMemberStatus::Approved->value,
         ])->create();
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJsonCount(2, 'data');
@@ -436,12 +410,12 @@ class MessageTest extends TestCase
             'description' => 'test channel description',
             'visibility' => ChannelVisibility::Private->value,
         ], $channelOwner);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
@@ -454,7 +428,7 @@ class MessageTest extends TestCase
             'status' => ChannelMemberStatus::Pending->value,
         ])->create();
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_FORBIDDEN);
     }
@@ -469,12 +443,12 @@ class MessageTest extends TestCase
             'description' => 'test channel description',
             'visibility' => ChannelVisibility::Private->value,
         ], $channelOwner);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message',
             ]);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'test message two',
@@ -487,7 +461,7 @@ class MessageTest extends TestCase
             'status' => ChannelMemberStatus::Pending->value,
         ])->create();
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_FORBIDDEN);
     }
@@ -502,12 +476,12 @@ class MessageTest extends TestCase
             'description' => 'test channel description',
 
         ], $channelOwner);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'should be fetched',
             ]);
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'should be fetched two',
@@ -519,12 +493,12 @@ class MessageTest extends TestCase
             'description' => 'test newChannel description',
 
         ], $newChannelOwner);
-        $this->actingAs($newChannelOwner)
+        $this->actingAs($newChannelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $newChannel->profile->handle,
                 'body' => 'not to be fetched',
             ]);
-        $this->actingAs($newChannelOwner)
+        $this->actingAs($newChannelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $newChannel->profile->handle,
                 'body' => 'not to be fetched two',
@@ -537,7 +511,7 @@ class MessageTest extends TestCase
             'status' => ChannelMemberStatus::Approved->value,
         ])->create();
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJsonCount(2, 'data');
@@ -555,8 +529,6 @@ class MessageTest extends TestCase
     #[Test]
     public function channels_fetched_messages_does_not_include_removed()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $channelOwner = User::factory()->create();
         $channelService = app(ChannelService::class);
         $channel = $channelService->createChannel([
@@ -564,12 +536,12 @@ class MessageTest extends TestCase
             'description' => 'test channel description',
         ], $channelOwner);
 
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'should be fetched',
             ]);
-        $message = $this->actingAs($channelOwner)
+        $message = $this->actingAs($channelOwner, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $channel->profile->handle,
                 'body' => 'not to be fetched',
@@ -582,15 +554,15 @@ class MessageTest extends TestCase
             'status' => ChannelMemberStatus::Approved->value,
         ])->create();
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJsonCount(2, 'data');
 
-        $this->actingAs($channelOwner)
+        $this->actingAs($channelOwner, 'sanctum')
             ->deleteJson(route('message.destroy', $message->json('id')));
 
-        $response = $this->actingAs($member)
+        $response = $this->actingAs($member, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJsonCount(1, 'data');
@@ -647,36 +619,66 @@ class MessageTest extends TestCase
         Message::factory(10)->create();
         $this->assertDatabaseCount(Message::class, 32);
 
-        $response = $this->actingAs($lowerUser)
-            ->putJson(route('profile.messages.search', ['profile' => $higher->handle]), ['search' => 'searchedKeyword']);
+        $response = $this->actingAs($lowerUser, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $higher->handle, 'search' => 'searchedKeyword']));
 
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJsonCount(2, 'data');
         $response->assertJson([
             'data' => [
                 [
-                    'sender' => $higher->id,
+                    'sender' => ['handle' => $higher->handle],
                     'body' => 'should be fetched as includes searchedKeyword, send by higher',
                 ],
                 [
-                    'sender' => $lower->id,
+                    'sender' => ['handle' => $lower->handle],
                     'body' => 'should be fetched as includes searchedKeyword, send by lower',
                 ],
             ],
         ]);
-
-        //        // unrelated user shouldn't find anything:
-        //        $newUser = User::factory()->create();
-        //        $response = $this->actingAs($newUser)
-        //            ->putJson(route('profile.messages.search', ['profile' => $higher->handle]), ['search' => 'searchedKeyword']);
-        //        $response->assertStatus(Response::HTTP_NOT_FOUND);
     }
 
-    //    test_messages_are_ordered_chronologically
-    //    test_message_pagination_works
-    //    test_fetching_messages_returns_sender_relationship
-    //    test_unread_messages_are_flagged_correctly (if you track read state)
-    //
+
+    #[Test]
+    public function users_cannot_fetch_messages_from_other_conversations()
+    {
+        $participantA = User::factory()->create();
+        $participantB = User::factory()->create();
+        $stranger = User::factory()->create();
+
+        $this->actingAs($participantA, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $participantB->profile->handle,
+                'body' => 'private message',
+            ])->assertStatus(Response::HTTP_CREATED);
+
+        // No conversation exists between stranger and participantB
+        $this->actingAs($stranger, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $participantB->profile->handle]))
+            ->assertStatus(Response::HTTP_NOT_FOUND);
+    }
+
+    #[Test]
+    public function users_cannot_fetch_messages_from_other_conversations_search()
+    {
+        $participantA = User::factory()->create();
+        $participantB = User::factory()->create();
+        $stranger = User::factory()->create();
+
+        $this->actingAs($participantA, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $participantB->profile->handle,
+                'body' => 'top secret keyword',
+            ])->assertStatus(Response::HTTP_CREATED);
+
+        // Even knowing the exact keyword, an outsider gets 404
+        $this->actingAs($stranger, 'sanctum')
+            ->getJson(route('profile.messages.index', [
+                'profile' => $participantB->profile->handle,
+                'search' => 'secret',
+            ]))
+            ->assertStatus(Response::HTTP_NOT_FOUND);
+    }
 
     // Updating (if your app allows editing messages)
     #[Test]
@@ -693,7 +695,7 @@ class MessageTest extends TestCase
             'body' => 'original message',
         ]);
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->putJson(route('message.update', $message->id), [
                 'body' => 'updated message',
             ]);
@@ -723,7 +725,7 @@ class MessageTest extends TestCase
             'body' => 'original message',
         ]);
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->putJson(route('message.update', $message->id), [
                 'body' => 'updated message',
             ]);
@@ -764,13 +766,11 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_delete_own_message_before_seen_in_conversation()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $senderUser = User::factory()->create();
         $receiver_user = User::factory()->create();
         $receiver = $receiver_user->profile;
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
@@ -779,7 +779,7 @@ class MessageTest extends TestCase
         $messageId = $response->json()['id'];
         $this->assertDatabaseCount(Message::class, 1);
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.destroy', $messageId));
         $response->assertStatus(Response::HTTP_NO_CONTENT);
 
@@ -797,7 +797,7 @@ class MessageTest extends TestCase
         $message = Message::factory()->create();
         $this->assertDatabaseCount(Message::class, 1);
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.destroy', $message->id));
         $response->assertStatus(Response::HTTP_FORBIDDEN);
 
@@ -819,7 +819,7 @@ class MessageTest extends TestCase
         ]);
         $this->assertDatabaseCount(Message::class, 1);
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.destroy', $message->id));
         $response->assertStatus(Response::HTTP_FORBIDDEN);
 
@@ -831,14 +831,12 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_hide_associated_message_as_sender()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiverUser = User::factory()->create();
         $receiver = $receiverUser->profile;
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
@@ -854,7 +852,7 @@ class MessageTest extends TestCase
             'body' => 'test message',
         ]);
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.hide', $message['id']));
         $response->assertStatus(Response::HTTP_NO_CONTENT);
 
@@ -871,13 +869,11 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_hide_associated_message_as_receiver()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiver = User::factory()->create();
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->profile->handle,
                 'body' => 'test message',
@@ -908,14 +904,12 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_hide_associated_message_both_plus_soft_delete()
     {
-        Event::fake([MessageSent::class]); // not checking the broadcasting
-
         $senderUser = User::factory()->create();
         $sender = $senderUser->profile;
         $receiverUser = User::factory()->create();
         $receiver = $receiverUser->profile;
 
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->postJson(route('message.store'), [
                 'receiver_handle' => $receiver->handle,
                 'body' => 'test message',
@@ -931,7 +925,7 @@ class MessageTest extends TestCase
         ]);
 
         // hiding as sender
-        $response = $this->actingAs($senderUser)
+        $response = $this->actingAs($senderUser, 'sanctum')
             ->deleteJson(route('message.hide', $message['id']));
         $response->assertStatus(Response::HTTP_NO_CONTENT);
 
@@ -984,7 +978,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, $createdMessage);
 
         $user = User::factory()->create();
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'sanctum')
             ->deleteJson(route('message.hide', $message['id']));
         $response->assertStatus(Response::HTTP_FORBIDDEN);
 
@@ -992,40 +986,17 @@ class MessageTest extends TestCase
         $this->assertDatabaseCount(Message::class, 1);
     }
 
-    //    test_deleting_message_triggers_events
-    //
-    // Permissions / Security
-    //
-    //    test_message_authorization_is_enforced
-    //    test_cannot_access_message_of_users_outside_conversation
-    //    test_rate_limiting_applies_to_message_creation (if applicable)
-    //
-    // Attachments (if you support media)
+    // Attachments/Medias
     //
     //    test_user_can_send_message_with_attachment
     //    test_attachment_must_be_valid_file_type
     //    test_attachment_upload_stores_file_correctly
     //    test_message_with_attachment_returns_file_metadata
     //
-    // Read State (read receipts / seen)
-    //
-    //    test_user_can_mark_message_as_read
-    //    test_user_cannot_mark_message_in_other_conversation_as_read
-    //    test_marking_as_read_updates_conversation_unread_count
-    //    test_read_receipt_event_is_dispatched (if applicable)
-    //
-    //
-    // Database & Performance
-    //
-    //    test_message_model_has_expected_relationships
-    //    test_message_queries_are_optimized_and_use_indexes (if you enforce indexes)
-    //    test_message_factory_generates_valid_model
 
     #[Test]
     public function sending_a_message_dispatches_message_sent_event()
     {
-        Event::fake([MessageSent::class]);
-
         $sender = User::factory()->create();
         $receiver = User::factory()->create();
 
@@ -1045,7 +1016,6 @@ class MessageTest extends TestCase
     #[Test]
     public function mark_conversation_message_as_read_dispatches_read_and_update_last_read_message_correctly()
     {
-        Event::fake([MessageSent::class, MessageRead::class]);
         $sender = User::factory()->create();
         $reader = User::factory()->create();
         $conversation = Conversation::factory()->create([
@@ -1115,7 +1085,6 @@ class MessageTest extends TestCase
     #[Test]
     public function user_can_mark_their_channel_message_as_read()
     {
-        Event::fake([MessageRead::class]);
 
         $channel = Channel::factory()->create([
             'type' => ChannelType::Group->value,
@@ -1143,9 +1112,48 @@ class MessageTest extends TestCase
     }
 
     #[Test]
+    public function read_and_unread_messages_are_flagged_correctly()
+    {
+        $sender = User::factory()->create();
+        $reciever = User::factory()->create();
+
+        $toNotRead = $this->actingAs($sender, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $reciever->profile->handle,
+                'body' => 'stays unread',
+            ])->json('id');
+
+        $toRead = $this->actingAs($sender, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $reciever->profile->handle,
+                'body' => 'gets read',
+            ])->json('id');
+
+        // marking $toRead as read
+        $this->actingAs($reciever, 'sanctum')
+            ->postJson(route('message.read', ['message' => $toRead]))
+            ->assertStatus(Response::HTTP_OK);
+
+        // per design, only receiver can mark a message as read, and only sender can see if it's read
+        $response = $this->actingAs($reciever, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $sender->profile->handle]));
+        $response->assertStatus(Response::HTTP_OK);
+        $byId = collect($response->json('data'))->keyBy('id');
+        $this->assertNull($byId[$toRead]['is_read']);
+        $this->assertNull($byId[$toNotRead]['is_read']);
+
+
+        $response = $this->actingAs($sender, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $reciever->profile->handle]));
+        $response->assertStatus(Response::HTTP_OK);
+        $byId = collect($response->json('data'))->keyBy('id');
+        $this->assertTrue($byId[$toRead]['is_read']);
+        $this->assertFalse($byId[$toNotRead]['is_read']);
+    }
+
+    #[Test]
     public function message_cannot_be_marked_as_read_by_unauthorized_user()
     {
-        Event::fake([MessageRead::class]);
 
         Message::factory(10)->create();
         $conversation = Conversation::factory()->create([
@@ -1168,4 +1176,88 @@ class MessageTest extends TestCase
             'higher_profile_last_read_message_id' => 1,
         ]);
     }
+
+
+    #[Test]
+    public function messages_are_ordered_chronologically()
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        foreach (['first', 'second', 'third', 'fourth', 'fifth'] as $body) {
+            $this->actingAs($userA, 'sanctum')
+                ->postJson(route('message.store'), [
+                    'receiver_handle' => $userB->profile->handle,
+                    'body' => $body,
+                ])->assertStatus(Response::HTTP_CREATED);
+        }
+
+        $response = $this->actingAs($userA, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $userB->profile->handle]));
+
+        $response->assertStatus(Response::HTTP_OK);
+
+        // newest first
+        $response->assertJsonPath('data.0.body', 'fifth');
+        $response->assertJsonPath('data.4.body', 'first');
+
+        // id must be descending
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $sorted = $ids;
+        rsort($sorted);
+        $this->assertSame($sorted, $ids);
+    }
+
+    #[Test]
+    public function message_pagination_works()
+    {
+        $beforeCount = config('app.messages_count_before_anchor_for_pagination', 10);
+        $afterCount = config('app.messages_count_after_anchor_for_pagination', 30);
+        $totalCount = $beforeCount + $afterCount;
+        $extraMessages = 20;
+
+        $lowerUser = User::factory()->create();
+        $higherUser = User::factory()->create();
+
+        $conversation = Conversation::factory()->create([
+            'lower_profile_id' => $lowerUser->profile->id,
+            'higher_profile_id' => $higherUser->profile->id,
+            'is_available_for_lower_profile' => true,
+            'is_available_for_higher_profile' => true,
+        ]);
+
+        Message::factory($totalCount + $extraMessages)->state([
+            'sender_id' => $lowerUser->profile->id,
+            'messageable_id' => $conversation->id,
+            'messageable_type' => MessageableType::Conversation->value,
+        ])->create();
+
+        // request with no anchor must newest messages (page) with has_more_before=true
+        $response = $this->actingAs($lowerUser, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $higherUser->profile->handle]));
+
+        $response->assertStatus(Response::HTTP_OK);
+        $response->assertJsonCount($totalCount, 'data');
+        $response->assertJsonPath('meta.has_more_before', true);
+        $response->assertJsonPath('meta.has_more_after', false);
+        $response->assertJsonPath('data.0.id', Message::max('id'));
+
+        // request with anchor id, providing an id that can get both has_more sides true
+        $allIds = Message::orderBy('id')->pluck('id');
+        $anchor = $allIds[$beforeCount + intdiv($extraMessages, 2)];
+
+        $response = $this->actingAs($lowerUser, 'sanctum')
+            ->getJson(route('profile.messages.index', [
+                'profile' => $higherUser->profile->handle,
+                'anchor_message_id' => $anchor,
+            ]));
+
+        $response->assertStatus(Response::HTTP_OK);
+        $response->assertJsonPath('meta.has_more_before', true);
+        $response->assertJsonPath('meta.has_more_after', true);
+        // anchor message must be in the payload
+        $this->assertContains($anchor, collect($response->json('data'))->pluck('id')->all());
+    }
+
+
 }
