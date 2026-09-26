@@ -129,4 +129,7 @@ return [
     'max_profile_picture_per_channel' => env('APP_MAX_PROFILE_PICTURE_PER_CHANNEL', 1),
     'profiles_pagination_limit' => env('APP_PROFILES_PAGINATION_LIMIT', 30),
 
+    'messages_count_before_anchor_for_pagination' => env('APP_MESSAGE_PAGE_CONTAINS_BEFORE', 10),
+    'messages_count_after_anchor_for_pagination' => env('APP_MESSAGE_PAGE_CONTAINS_AFTER', 30),
+
 ];

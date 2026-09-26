@@ -37,9 +37,9 @@ Route::prefix('v1')->group(function () {
         Route::delete('p/pictures/{profile_picture:uuid}', [ProfilePictureController::class, 'destroy'])->name('profile.picture.destroy');
 
         Route::get('p/{profile:handle}/messages', [MessageController::class, 'index'])->where(['profile' => '[a-z0-9_]+'])->name('profile.messages.index');
+        // Route::get('p/{profile:handle}/search', [MessageController::class, 'search'])->where(['profile' => '[a-z0-9_]+'])->name('profile.messages.search');
 
-        Route::put('p/{profile:handle}/search', [MessageController::class, 'search'])->where(['profile' => '[a-z0-9_]+'])->name('profile.messages.search');
-        Route::get('search/', [MessageController::class, 'index'])->where(['profile' => '[a-z0-9_]+'])->name('search');
+        // todo: implement general search for text and profile handle
 
         Route::resource('channel', ChannelController::class)
             ->only(['index', 'store', 'show', 'update', 'destroy']); // channel's main crud actions
@@ -67,4 +67,4 @@ Route::prefix('v1')->group(function () {
     });
 });
 
-Route::fallback(fn () => response()->json(['message' => 'Route not found!'], 404));
+Route::fallback(fn() => response()->json(['message' => 'Route not found!'], 404));
