@@ -18,7 +18,7 @@ class ChannelMemberController extends Controller
     public function index(Request $request, Channel $channel)
     {
         $this->authorize('view', [ChannelMember::class, $channel]);
-        $members = ChannelMember::with('profile.featuredPicture')
+        $members = ChannelMember::with(['profile.profileable', 'profile.featuredPicture'])
             ->where('channel_id', $channel->id)
             ->statusFilter($request)
             ->orderBy('joined_at')->paginate(config('app.profiles_pagination_limit'));
