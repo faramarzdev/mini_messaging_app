@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Profile;
 use App\Observers\ProfileObserver;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -26,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         Profile::observe(ProfileObserver::class);
+
+        Model::preventLazyLoading();
 
         // Default API rate limiter (required for throttleApi())
         RateLimiter::for('api', function (Request $request) {
