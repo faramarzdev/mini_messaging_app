@@ -6,6 +6,7 @@ use App\Enums\ProfileableTypes;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Conversation>
@@ -38,12 +39,19 @@ class ConversationFactory extends Factory
             $higherProfileId = $higherProfile->id;
         }
 
+        if (isset($this->state['last_activity_at'])) {
+            $lastActivityAt = Carbon::parse($this->state['last_activity_at']);
+        } else {
+            $lastActivityAt = Carbon::now();
+        }
+
         return [
             'lower_profile_id' => $lowerProfileId,
             'is_available_for_lower_profile' => true,
             'higher_profile_id' => $higherProfileId,
             'is_available_for_higher_profile' => true,
             'last_message_id' => null,
+            'last_activity_at' => $lastActivityAt,
         ];
     }
 }

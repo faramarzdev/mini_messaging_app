@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
 class Conversation extends Model implements Messageable
 {
@@ -23,9 +24,14 @@ class Conversation extends Model implements Messageable
         'is_available_for_higher_profile',
 
         'last_message_id',
+        'last_activity_at',
 
         'lower_profile_last_read_message_id',
         'higher_profile_last_read_message_id',
+    ];
+
+    protected $casts = [
+        'last_activity_at' => 'datetime',
     ];
 
     public function lowerProfile(): BelongsTo
@@ -91,5 +97,14 @@ class Conversation extends Model implements Messageable
     public function canReceiveMessageFrom(Profile $sender): bool
     {
         return in_array($sender->id, $this->connectedProfilesIds());
+    }
+
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        static::creating(function ($conversation) {
+            $conversation->last_activity_at ??= Carbon::now();
+        });
     }
 }

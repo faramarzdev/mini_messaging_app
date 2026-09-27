@@ -29,14 +29,14 @@ class Channel extends Model implements Messageable
         'confirm_joined',
         'messages_count',
         'last_message_id',
+        'last_activity_at',
     ];
 
     protected $casts = [
         'can_join_by_link' => 'boolean',
         'confirm_joined' => 'boolean',
         'messages_count' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'last_activity_at' => 'datetime',
     ];
 
     public function owner(): BelongsTo

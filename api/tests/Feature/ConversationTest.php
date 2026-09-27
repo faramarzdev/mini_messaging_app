@@ -8,6 +8,7 @@ use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -191,5 +192,18 @@ class ConversationTest extends TestCase
         $this->assertDatabaseCount(Conversation::class, 50);
         $this->getJson(route('conversations.my'))
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
+    }
+
+    #[Test]
+    public function conversation_creation_would_populate_its_last_activity_at()
+    {
+        Carbon::setTestNow('2026-09-27 12:00:00');
+
+        $conversation = Conversation::factory()->create()->toArray();
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation['id'],
+            'last_activity_at' => '2026-09-27 12:00:00',
+        ]);
     }
 }
