@@ -50,7 +50,7 @@ class ChatController extends Controller
             ->forProfile($profile)
             ->toBase();
 
-        $channels = DB::table('channels')
+        $channels = Channel::query()
             ->select([
                 'channels.id',
                 'channels.last_message_id',  // after migration
@@ -81,12 +81,19 @@ class ChatController extends Controller
         $channelIds = $ids->where('type', 'channel')->pluck('id');
 
         $conversations = Conversation::whereIn('id', $conversationIds)
-            ->with(['lowerProfile.featuredPicture', 'higherProfile.featuredPicture', 'lastMessage'])
+            ->with([
+                'lowerProfile.profileable', 'lowerProfile.featuredPicture',
+                'higherProfile.profileable', 'higherProfile.featuredPicture',
+                'lastMessage.sender.profileable',
+                ])
             ->get()
             ->keyBy('id');
 
         $channels = Channel::whereIn('id', $channelIds)
-            ->with(['profile.featuredPicture', 'lastMessage'])
+            ->with([
+                'profile.profileable', 'profile.featuredPicture',
+                'lastMessage.sender.profileable',
+                ])
             ->get()
             ->keyBy('id');
 
