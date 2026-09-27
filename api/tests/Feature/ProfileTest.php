@@ -244,8 +244,7 @@ class ProfileTest extends TestCase
         $removalResponse->assertStatus(Response::HTTP_NO_CONTENT);
 
 
-        Queue::assertPushed(DeleteMediaFileJob::class, fn ($job) =>
-            $job->disk === 'profile_pictures' && $job->path === $path
+        Queue::assertPushed(DeleteMediaFileJob::class, fn($job) => $job->disk === 'profile_pictures' && $job->path === $path
         );
         $this->assertDatabaseMissing(ProfilePicture::class, ['uuid' => $uuid]);
     }
@@ -374,4 +373,19 @@ class ProfileTest extends TestCase
 
         $response->assertStatus(Response::HTTP_NOT_ACCEPTABLE);
     }
+
+
+    #[Test]
+    public function profile_resource_throws_without_profileable_eager_loaded(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        // fetch TWO rows — this is what actually triggers the flag
+        $profiles = Profile::query()->whereIn('id', [$userA->profile->id, $userB->profile->id])->get();
+
+        $this->expectException(\Illuminate\Database\LazyLoadingViolationException::class);
+        (new \App\Http\Resources\ProfileResource($profiles->first()))->toArray(request());
+    }
+
 }

@@ -88,7 +88,6 @@ class ChatTest extends TestCase
         $this->assertSame(['channel', 'conversation'], $types);
     }
 
-    // ─── Sorting tests ────────────────────────────────────────────────────────
 
     #[Test]
     public function my_chats_sorted_by_most_recent_message_first(): void
@@ -108,7 +107,6 @@ class ChatTest extends TestCase
         $this->assertSame('conversation', $data[1]['type']);
     }
 
-    // ─── Response shape tests ─────────────────────────────────────────────────
 
     #[Test]
     public function conversation_item_has_correct_shape(): void
@@ -124,10 +122,42 @@ class ChatTest extends TestCase
         $this->assertArrayHasKey('id', $item);
         $this->assertArrayHasKey('profile', $item);
         $this->assertArrayHasKey('handle', $item['profile']);
+        $this->assertArrayHasKey('name', $item['profile']);
+        $this->assertArrayHasKey('profileable', $item['profile']);
         $this->assertArrayHasKey('featured_picture', $item['profile']);
         $this->assertArrayHasKey('last_message', $item);
+        $this->assertArrayHasKey('sender', $item['last_message']);
+        $this->assertArrayHasKey('handle', $item['last_message']['sender']);
+        $this->assertArrayHasKey('name', $item['last_message']['sender']);
+        $this->assertArrayHasKey('profileable', $item['last_message']['sender']);
         $this->assertArrayHasKey('unread_count', $item);
     }
+
+    #[Test]
+    public function my_chats_resolves_full_profile_data_with_multiple_conversations(): void
+    {
+        // to cover the lazyloading prevention
+        $otherA = User::factory()->create(['name' => 'Sender A']);
+        $otherB = User::factory()->create(['name' => 'Sender B']);
+
+        $this->createConversationWithMessage($this->profile, $otherA->profile);   // sender = viewer
+        $this->createConversationWithMessage($otherB->profile, $this->profile);   // sender = otherB
+
+        $response = $this->getJson(route('chats.my'));
+
+        $response->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+
+        // profile.name requires lowerProfile/higherProfile.profileable to actually resolve
+        $names = collect($response->json('data'))->pluck('profile.name')->sort()->values()->all();
+        $this->assertSame(['Sender A', 'Sender B'], $names);
+
+        // last_message.sender.name requires lastMessage.sender.profileable to resolve
+        foreach ($response->json('data') as $item) {
+            $this->assertNotNull($item['last_message']['sender']['name'] ?? null, "Missing sender name for item: ".json_encode($item));
+        }
+    }
+
 
     #[Test]
     public function channel_item_has_correct_shape(): void
@@ -146,7 +176,6 @@ class ChatTest extends TestCase
         $this->assertArrayHasKey('unread_count', $item);
     }
 
-    // ─── Unread count tests ───────────────────────────────────────────────────
 
     #[Test]
     public function unread_count_is_zero_when_all_messages_read(): void
@@ -240,7 +269,6 @@ class ChatTest extends TestCase
         $this->assertSame(2, $response->json('data.0.unread_count'));
     }
 
-    // ─── Exclusion tests ──────────────────────────────────────────────────────
 
     #[Test]
     public function does_not_include_channels_user_has_not_joined(): void
@@ -280,7 +308,6 @@ class ChatTest extends TestCase
         $response->assertJsonCount(0, 'data');
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private function createConversationWithMessage(Profile $profileA, Profile $profileB): Conversation
     {
@@ -335,4 +362,5 @@ class ChatTest extends TestCase
 
         return $channel;
     }
+
 }
