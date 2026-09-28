@@ -26,8 +26,8 @@ export default function ConversationItem({ conversation, loggedInUser }) {
               <>
                 {/* todo: Add proper sender name display (specifically when it is in group) */}
                 <span className="font-bold text-gray-500 dark:text-gray-300">
-                  {conversation.last_message.sender.handle === loggedInUser.handle &&
-                    "You: "}
+                  {conversation.last_message.sender.handle ===
+                    loggedInUser.profile.handle && "You: "}
                 </span>
                 {conversation.last_message.body}
               </>
