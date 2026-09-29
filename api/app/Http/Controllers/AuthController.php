@@ -24,7 +24,7 @@ class AuthController extends Controller
     public function register(AuthRegisterRequest $request): JsonResponse
     {
         $canRegister = config('auth.is_registration_allowed');
-        if (!$canRegister) {
+        if (! $canRegister) {
             throw ValidationException::withMessages([
                 'general' => ['Registration is currently closed.'],
             ]);
@@ -54,7 +54,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);

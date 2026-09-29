@@ -15,25 +15,26 @@ class MessageResource extends JsonResource
     public function toArray(Request $request): array
     {
         $profile = $request->currentProfile();
+
         return [
             'id' => $this->id,
-            'sender' => $this->whenLoaded('sender',  fn() => new ProfileResource($this->sender)),
+            'sender' => $this->whenLoaded('sender', fn () => new ProfileResource($this->sender)),
             'body' => $this->body,
             'type' => $this->type,
             // 'medias' => $this->, // currently not implemented, todo: implement it
             'is_read' => $this->isRead($profile->id),
             'created_at' => $this->created_at?->format('Y-m-d H:i'),
-            'reply' => $this->whenLoaded('replyMessage', fn() => $this->replyMessage, null),
+            'reply' => $this->whenLoaded('replyMessage', fn () => $this->replyMessage, null),
         ];
     }
 
-    protected function isRead(?int $profileId): bool|null
+    protected function isRead(?int $profileId): ?bool
     {
         // return null if message is not send by current profile
         if ($this->sender_id != $profileId) {
             return null;
         }
+
         return (bool) $this->is_read;
     }
-
 }

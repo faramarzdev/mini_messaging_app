@@ -10,6 +10,5 @@ final readonly class MessagePage
         public Collection $messages,
         public bool $hasMoreBefore,
         public bool $hasMoreAfter,
-    ) {
-    }
+    ) {}
 }

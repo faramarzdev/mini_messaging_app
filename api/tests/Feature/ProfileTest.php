@@ -243,8 +243,7 @@ class ProfileTest extends TestCase
             ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $uuid]));
         $removalResponse->assertStatus(Response::HTTP_NO_CONTENT);
 
-
-        Queue::assertPushed(DeleteMediaFileJob::class, fn($job) => $job->disk === 'profile_pictures' && $job->path === $path
+        Queue::assertPushed(DeleteMediaFileJob::class, fn ($job) => $job->disk === 'profile_pictures' && $job->path === $path
         );
         $this->assertDatabaseMissing(ProfilePicture::class, ['uuid' => $uuid]);
     }
@@ -374,7 +373,6 @@ class ProfileTest extends TestCase
         $response->assertStatus(Response::HTTP_NOT_ACCEPTABLE);
     }
 
-
     #[Test]
     public function profile_resource_throws_without_profileable_eager_loaded(): void
     {
@@ -387,5 +385,4 @@ class ProfileTest extends TestCase
         $this->expectException(\Illuminate\Database\LazyLoadingViolationException::class);
         (new \App\Http\Resources\ProfileResource($profiles->first()))->toArray(request());
     }
-
 }
