@@ -15,6 +15,7 @@ use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -461,4 +462,23 @@ class ChannelTest extends TestCase
 
     // all message sending/fetching tests are in MessageTest.php
 
+    #[Test]
+    public function channel_creation_would_populate_its_last_activity_at()
+    {
+        Carbon::setTestNow('2026-09-27 12:00:00');
+
+        // make it go through ChannelService
+        $channelOwner = User::factory()->create();
+        $response = $this->actingAs($channelOwner, 'sanctum')
+            ->postJson(route('channel.store'), [
+                ...$this->channelToCreate,
+                'handle' => 'test_channel',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas('channels', [
+            'id' => $response->json('id'),
+            'last_activity_at' => '2026-09-27 12:00:00',
+        ]);
+    }
 }

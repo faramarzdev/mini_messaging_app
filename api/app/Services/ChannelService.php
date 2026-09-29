@@ -12,6 +12,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ChannelService
@@ -20,10 +21,13 @@ class ChannelService
     {
         return DB::transaction(function () use ($validatedData, $owner) {
 
+            $now = Carbon::now();
+
             // 1. Create the channel
             $channel = Channel::query()->create([
                 'owner_id' => $owner->id,
                 'messages_count' => 0,
+                'last_activity_at' => $now,
                 ...$validatedData,
 
             ]);

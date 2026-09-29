@@ -12,24 +12,32 @@ use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
-use App\Models\Profile;
 use App\Models\User;
 use App\Services\ChannelService;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesChannels;
+use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
 class MessageTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesChannels, CreatesConversations, RefreshDatabase;
+
+    private ChannelService $channelService;
+
+    protected static string $default_time = '2025-01-01 12:00:00';
 
     protected function setUp(): void
     {
         parent::setUp();
         Event::fake([MessageSent::class, MessageRead::class]);
+        Carbon::setTestNow(self::$default_time);
+
+        $this->channelService = app(ChannelService::class);
     }
 
     #[Test]
@@ -236,6 +244,157 @@ class MessageTest extends TestCase
     }
 
     #[Test]
+    public function sending_message_update_last_activity_at()
+    {
+        // for conversations
+        [$conversation, $lowerUser, $higherUser] = $this->createConversation();
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+
+        $newTime = '2026-09-27 12:00:00';
+        Carbon::setTestNow($newTime);
+        $response = $this->actingAs($lowerUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $higherUser->profile->handle,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse($newTime),
+        ]);
+
+        // for channels
+        Carbon::setTestNow(self::$default_time);
+        [$channel, $channelOwner] = $this->createChannel();
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+
+        Carbon::setTestNow($newTime);
+        $response = $this->actingAs($channelOwner, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $channel->profile->handle,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_activity_at' => Carbon::parse($newTime),
+        ]);
+    }
+
+    #[Test]
+    public function message_removal_updates_last_activity_at()
+    {
+        // for conversations
+        [$conversation, $lowerUser, $higherUser] = $this->createConversation();
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+
+        $lastMessageTime = '2026-09-27 12:00:00';
+        Carbon::setTestNow($lastMessageTime);
+        $response = $this->actingAs($lowerUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $higherUser->profile->handle,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse($lastMessageTime),
+        ]);
+
+        $lastMessageId = $response->json()['id'];
+
+        // messaged removed, not hide for a side; i must be updated
+        $this->actingAs($lowerUser, 'sanctum')
+            ->deleteJson(route('message.destroy', $lastMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+
+        // for channels
+        Carbon::setTestNow(self::$default_time);
+        [$channel, $channelOwner] = $this->createChannel();
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+
+        Carbon::setTestNow($lastMessageTime);
+
+        $response = $this->actingAs($channelOwner, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $channel->profile->handle,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $lastMessageId = $response->json()['id'];
+
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_activity_at' => Carbon::parse($lastMessageTime),
+        ]);
+
+        $this->actingAs($channelOwner, 'sanctum')
+            ->deleteJson(route('message.destroy', $lastMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+        $this->assertDatabaseHas(Channel::class, [
+            'id' => $channel->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+    }
+
+    #[Test]
+    public function message_hiding_does_not_update_last_activity_at()
+    {
+        // for conversations
+        [$conversation, $lowerUser, $higherUser] = $this->createConversation();
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse(self::$default_time),
+        ]);
+
+        $lastMessageTime = '2026-09-27 12:00:00';
+        Carbon::setTestNow($lastMessageTime);
+        $response = $this->actingAs($lowerUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $higherUser->profile->handle,
+                'body' => 'test message',
+            ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse($lastMessageTime),
+        ]);
+        $lastMessageId = $response->json()['id'];
+
+        // hiding for lowerUser's side, the activity time must not be changed
+        $this->actingAs($lowerUser, 'sanctum')
+            ->deleteJson(route('message.hide', $lastMessageId))
+            ->assertStatus(Response::HTTP_NO_CONTENT);
+
+        $this->assertDatabaseHas(Conversation::class, [
+            'id' => $conversation->id,
+            'last_activity_at' => Carbon::parse($lastMessageTime),
+        ]);
+
+        // channels does not have hiding option, the message is either visible for all member or deleted!
+    }
+
+    #[Test]
     public function cannot_send_empty_message()
     {
         $senderUser = User::factory()->create();
@@ -259,6 +418,20 @@ class MessageTest extends TestCase
         ]);
         $this->assertDatabaseEmpty(Message::class);
 
+    }
+
+    #[Test]
+    public function failed_message_creation_does_not_change_last_activity_at(): void
+    {
+        [$conversation, $lowerUser] = $this->createConversation();
+        $original = $conversation->last_activity_at->copy();
+
+        $this->actingAs($lowerUser)->postJson(
+            route('message.store'),
+            ['body' => '']
+        )->assertStatus(422);
+
+        $this->assertTrue($conversation->fresh()->last_activity_at->equalTo($original));
     }
 
     // user_cannot_send_message_to_user_they_got_blocked
@@ -637,7 +810,6 @@ class MessageTest extends TestCase
             ],
         ]);
     }
-
 
     #[Test]
     public function users_cannot_fetch_messages_from_other_conversations()
@@ -1142,7 +1314,6 @@ class MessageTest extends TestCase
         $this->assertNull($byId[$toRead]['is_read']);
         $this->assertNull($byId[$toNotRead]['is_read']);
 
-
         $response = $this->actingAs($sender, 'sanctum')
             ->getJson(route('profile.messages.index', ['profile' => $reciever->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
@@ -1176,7 +1347,6 @@ class MessageTest extends TestCase
             'higher_profile_last_read_message_id' => 1,
         ]);
     }
-
 
     #[Test]
     public function messages_are_ordered_chronologically()
@@ -1258,6 +1428,4 @@ class MessageTest extends TestCase
         // anchor message must be in the payload
         $this->assertContains($anchor, collect($response->json('data'))->pluck('id')->all());
     }
-
-
 }
