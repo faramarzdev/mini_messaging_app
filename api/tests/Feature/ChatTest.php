@@ -13,12 +13,15 @@ use App\Models\Profile;
 use App\Models\User;
 use App\Services\ChannelService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesChannels;
+use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
 class ChatTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesChannels, CreatesConversations, RefreshDatabase;
 
     private User $user;
 
@@ -88,15 +91,16 @@ class ChatTest extends TestCase
         $this->assertSame(['channel', 'conversation'], $types);
     }
 
-
     #[Test]
     public function my_chats_sorted_by_most_recent_message_first(): void
     {
         $other = User::factory()->create();
 
-        // Create conversation first, channel second — channel should appear first since it has a higher last_message_id
-        $conversation = $this->createConversationWithMessage($this->profile, $other->profile);
-        $channel = $this->createChannelWithMember($this->profile, withMessage: true);
+        Carbon::setTestNow('2025-01-01 12:00:00');
+        $this->createConversationWithMessage($this->profile, $other->profile);
+
+        Carbon::setTestNow('2025-01-01 12:00:10');
+        $this->createChannelWithMember($this->profile, withMessage: true);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -106,7 +110,6 @@ class ChatTest extends TestCase
         $this->assertSame('channel', $data[0]['type']);
         $this->assertSame('conversation', $data[1]['type']);
     }
-
 
     #[Test]
     public function conversation_item_has_correct_shape(): void
@@ -154,10 +157,9 @@ class ChatTest extends TestCase
 
         // last_message.sender.name requires lastMessage.sender.profileable to resolve
         foreach ($response->json('data') as $item) {
-            $this->assertNotNull($item['last_message']['sender']['name'] ?? null, "Missing sender name for item: ".json_encode($item));
+            $this->assertNotNull($item['last_message']['sender']['name'] ?? null, 'Missing sender name for item: '.json_encode($item));
         }
     }
-
 
     #[Test]
     public function channel_item_has_correct_shape(): void
@@ -175,7 +177,6 @@ class ChatTest extends TestCase
         $this->assertArrayHasKey('last_message', $item);
         $this->assertArrayHasKey('unread_count', $item);
     }
-
 
     #[Test]
     public function unread_count_is_zero_when_all_messages_read(): void
@@ -269,7 +270,6 @@ class ChatTest extends TestCase
         $this->assertSame(2, $response->json('data.0.unread_count'));
     }
 
-
     #[Test]
     public function does_not_include_channels_user_has_not_joined(): void
     {
@@ -308,6 +308,22 @@ class ChatTest extends TestCase
         $response->assertJsonCount(0, 'data');
     }
 
+    #[Test]
+    public function empty_channel_appears_above_older_conversation_with_messages(): void
+    {
+        // older conversation with a message.
+        Carbon::setTestNow('2025-01-01 13:00:00');
+        [$conversation, $user] = $this->createConversation(makeMessage: true);
+
+        // newer empty channel
+        Carbon::setTestNow('2026-09-28 12:00:00');
+        [$channel] = $this->createChannel(owner: $user);
+
+        $response = $this->actingAs($user)->getJson(route('chats.my'));
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertSame([$channel->id, $conversation->id], $ids);
+    }
 
     private function createConversationWithMessage(Profile $profileA, Profile $profileB): Conversation
     {
@@ -362,5 +378,4 @@ class ChatTest extends TestCase
 
         return $channel;
     }
-
 }

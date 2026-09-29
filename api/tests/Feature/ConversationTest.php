@@ -2,34 +2,25 @@
 
 namespace Tests\Feature;
 
-use App\Enums\ProfileableTypes;
 use App\Models\Conversation;
-use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
 use function PHPUnit\Framework\assertEquals;
 
 class ConversationTest extends TestCase
 {
-    use RefreshDatabase;
-
-    //    protected function setUp(): void
-    //    {
-    //        parent::setUp();
-    //        //        $this->migrateDatabases();
-    //    }
+    use CreatesConversations, RefreshDatabase;
 
     #[Test]
     public function user_can_get_their_conversations()
     {
         $user = User::factory()->create();
-        // user creation must make the profile
-
         $profile = $user->profile;
 
         Conversation::factory(3)->create([
@@ -59,9 +50,7 @@ class ConversationTest extends TestCase
     public function user_conversations_has_correct_pagination()
     {
         $user = User::factory()->create();
-        // user creation must make the profile
-        $profile = Profile::where('profileable_type', ProfileableTypes::User->value)
-            ->where('profileable_id', $user->id)->first();
+        $profile = $user->profile;
 
         Conversation::factory(60)->create([
             'lower_profile_id' => $profile->id,
@@ -83,10 +72,7 @@ class ConversationTest extends TestCase
     public function user_cannot_get_others_conversations()
     {
         $user = User::factory()->create();
-        // user creation must make the profile
-
-        $profile = Profile::where('profileable_type', ProfileableTypes::User->value)
-            ->where('profileable_id', $user->id)->first();
+        $profile = $user->profile;
 
         Conversation::factory(1)->create([
             'lower_profile_id' => $profile->id,
@@ -199,11 +185,26 @@ class ConversationTest extends TestCase
     {
         Carbon::setTestNow('2026-09-27 12:00:00');
 
-        $conversation = Conversation::factory()->create()->toArray();
+        [$conversation] = $this->createConversation();
 
         $this->assertDatabaseHas(Conversation::class, [
             'id' => $conversation['id'],
             'last_activity_at' => '2026-09-27 12:00:00',
         ]);
+    }
+
+    #[Test]
+    public function hiding_a_conversation_does_not_change_last_activity_at(): void
+    {
+        [$conversation, $lowerUser] = $this->createConversation();
+        $original = $conversation->last_activity_at->copy();
+
+        Carbon::setTestNow('2025-01-01 16:00:00');
+
+        $this->actingAs($lowerUser)->postJson(
+            route('conversations.hide', $conversation->id)
+        )->assertSuccessful();
+
+        $this->assertTrue($conversation->fresh()->last_activity_at->equalTo($original));
     }
 }

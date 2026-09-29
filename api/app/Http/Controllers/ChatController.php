@@ -33,7 +33,7 @@ class ChatController extends Controller
         $conversations = Conversation::query()
             ->select([
                 'id',
-                'last_message_id',
+                'last_activity_at',
                 DB::raw("'conversation' as type"),
                 DB::raw("(
             SELECT COUNT(*) FROM messages
@@ -53,7 +53,7 @@ class ChatController extends Controller
         $channels = Channel::query()
             ->select([
                 'channels.id',
-                'channels.last_message_id',  // after migration
+                'channels.last_activity_at',
                 DB::raw("'channel' as type"),
                 DB::raw("(
             SELECT COUNT(*) FROM messages
@@ -72,7 +72,7 @@ class ChatController extends Controller
 
         $paginated = DB::query()
             ->fromSub($conversations->unionAll($channels), 'chats')
-            ->orderBy('last_message_id', 'desc')
+            ->orderBy('last_activity_at', 'desc')
             ->paginate($perPage);
 
         $ids = collect($paginated->items());
@@ -85,7 +85,7 @@ class ChatController extends Controller
                 'lowerProfile.profileable', 'lowerProfile.featuredPicture',
                 'higherProfile.profileable', 'higherProfile.featuredPicture',
                 'lastMessage.sender.profileable',
-                ])
+            ])
             ->get()
             ->keyBy('id');
 
@@ -93,7 +93,7 @@ class ChatController extends Controller
             ->with([
                 'profile.profileable', 'profile.featuredPicture',
                 'lastMessage.sender.profileable',
-                ])
+            ])
             ->get()
             ->keyBy('id');
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\MessageableType;
 use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
 use App\Events\MessageRead;
@@ -36,7 +35,7 @@ class MessageController extends Controller
         $viewerProfile = $request->currentProfile();
 
         $messageable = MessageService::resolveMessageable($profile, $viewerProfile);
-        if (!$messageable) {
+        if (! $messageable) {
             return response()->json(['message' => 'No conversation or channel found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -52,7 +51,6 @@ class MessageController extends Controller
 
         return response()->json(new MessageCollection($page), Response::HTTP_OK);
     }
-
 
     public function store(StoreMessageRequest $request): JsonResponse
     {
@@ -95,16 +93,17 @@ class MessageController extends Controller
 
                 $toUpdate = [
                     'last_message_id' => $message->id,
+                    'last_activity_at' => $message->created_at,
                 ];
                 if ($conversation) {
                     // the conversation must appear on both side (even if it has been removed/hiden)
                     $toUpdate['is_available_for_lower_profile'] = true;
                     $toUpdate['is_available_for_higher_profile'] = true;
 
-                    if (!$conversation->lower_profile_last_read_message_id) {
+                    if (! $conversation->lower_profile_last_read_message_id) {
                         $toUpdate['lower_profile_last_read_message_id'] = $message->id;
                     }
-                    if (!$conversation->higher_profile_last_read_message_id) {
+                    if (! $conversation->higher_profile_last_read_message_id) {
                         $toUpdate['higher_profile_last_read_message_id'] = $message->id;
                     }
 
@@ -155,37 +154,27 @@ class MessageController extends Controller
     public function destroy(Request $request, Message $message): JsonResponse
     {
         $this->authorize('delete', $message);
+        // this deletes the resource for both side based on some business logic, check authorized
+
         $isLastMessage = $message->messageable->last_message_id === $message->id;
         if ($isLastMessage) {
-            $messageable = $message->messageable();
+            $previousMessage = Message::where('messageable_type', $message->messageable_type)
+                ->where('messageable_id', $message->messageable_id)
+                ->where('id', '!=', $message->id)
+                ->orderBy('id', 'desc')->first();
             $lastMessageIdToSet = null;
-            if ($message->messageable_type === MessageableType::Conversation->value) {
-                // $profile = $request->currentProfile();
-                $previousMessage = Message::where('messageable_type', $message->messageable_type)
-                    ->where('messageable_id', $message->messageable_id)
-                    ->where('id', '!=', $message->id)
-                    /* ->where(function ($query) use ($profile) { // needs last_message_id_on_(lower and higher) then
-                        $query->where(function ($query) use ($profile) {
-                            $query->where('sender_id', $profile->id)
-                                ->where('is_available_on_sender', true);
-                        })
-                            ->orWhere(function ($query) use ($profile) {
-                                $query->where('sender_id', '!=',$profile->id)
-                                    ->where('is_available_on_receiver', true);
-                            });
-                    }) */
-                    ->orderBy('id', 'desc')->first();
-                $lastMessageIdToSet = $previousMessage?->id;
-            } elseif ($message->messageable_type === MessageableType::Channel->value) {
-                $previousMessage = Message::where('messageable_type', $message->messageable_type)
-                    ->where('messageable_id', $message->messageable_id)
-                    ->where('id', '!=', $message->id)
-                    ->orderBy('id', 'desc')->first();
-                $lastMessageIdToSet = $previousMessage?->id;
+            $messageable = $message->messageable;
+            $lastActivityAtToSet = $messageable->created_at; // can't be null
+            if ($previousMessage) {
+                $lastMessageIdToSet = $previousMessage->id;
+                $lastActivityAtToSet = $previousMessage->created_at;
             }
-            $messageable->update(['last_message_id' => $lastMessageIdToSet]);
+
+            $messageable->update([
+                'last_message_id' => $lastMessageIdToSet,
+                'last_activity_at' => $lastActivityAtToSet,
+            ]);
         }
-        //
         $message->delete();
 
         return response()->json([], Response::HTTP_NO_CONTENT);
@@ -201,7 +190,6 @@ class MessageController extends Controller
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
 
-
     /**
      * real-time event; no impact/change on any models
      */
@@ -213,7 +201,7 @@ class MessageController extends Controller
         $readerProfile = $request->currentProfile();
         if ($message->messageable instanceof Conversation) {
             $conversation = $message->messageable;
-            if (!in_array($readerProfile->id, $conversation->connectedProfilesIds())) {
+            if (! in_array($readerProfile->id, $conversation->connectedProfilesIds())) {
                 return response()->json([], Response::HTTP_FORBIDDEN);
             }
 
@@ -221,7 +209,7 @@ class MessageController extends Controller
             if ($isLowerProfile && $conversation->lower_profile_last_read_message_id < $message->id) {
                 $conversation->update(['lower_profile_last_read_message_id' => $message->id]);
 
-            } elseif (!$isLowerProfile && $conversation->higher_profile_last_read_message_id < $message->id) {
+            } elseif (! $isLowerProfile && $conversation->higher_profile_last_read_message_id < $message->id) {
                 $conversation->update(['higher_profile_last_read_message_id' => $message->id]);
             }
 
