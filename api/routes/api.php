@@ -67,4 +67,4 @@ Route::prefix('v1')->group(function () {
     });
 });
 
-Route::fallback(fn() => response()->json(['message' => 'Route not found!'], 404));
+Route::fallback(fn () => response()->json(['message' => 'Route not found!'], 404));

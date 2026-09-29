@@ -9,6 +9,7 @@ class MessageCollection extends BaseCollection
     public $collects = MessageResource::class;
 
     protected bool $hasMoreBefore = false;
+
     protected bool $hasMoreAfter = false;
 
     public function __construct(MessagePage $page)

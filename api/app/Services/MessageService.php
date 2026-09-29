@@ -10,7 +10,6 @@ use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
-use Illuminate\Database\Eloquent\Collection;
 
 class MessageService
 {
@@ -84,7 +83,7 @@ class MessageService
             ->where('messageable_id', $messageable->id)
             ->availableFor($viewerProfile);
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $query->where('body', 'like', '%'.$search.'%');
         }
 
@@ -139,7 +138,6 @@ class MessageService
             hasMoreAfter: false,
         );
     }
-
 
     private static function getLastReadMessageId(Conversation|Channel $messageable, Profile $viewerProfile): ?int
     {
