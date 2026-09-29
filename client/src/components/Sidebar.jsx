@@ -57,7 +57,7 @@ export default function Sidebar({
                 icon={<UserIcon />}
                 label="My Profile"
                 onClick={() => {
-                  navigate("/profile/me");
+                  navigate(ROUTES.profilePath(user.profile.handle));
                   setMenuOpen(false);
                 }}
               />

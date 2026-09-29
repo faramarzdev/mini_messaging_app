@@ -56,7 +56,7 @@ export default function ChatPage() {
             <div>An error occurred while loading messages.</div>
           )}
         </div>
-        <MessageInput otherProfile={otherProfile} />
+        <MessageInput key={handle} otherProfile={otherProfile} />
       </div>
     </>
   );

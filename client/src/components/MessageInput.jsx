@@ -1,40 +1,31 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAutoResize } from "../hooks/useAutoResize";
 import { sendMessage } from "../api/messages";
 
-/**
- * MessageInput
- *
- * Props:
- *   onSend  function(text: string)
- */
 export default function MessageInput({ otherProfile }) {
   const [text, setText] = useState("");
-  const [attachOpen, setAttachOpen] = useState(false);
+  const queryClient = useQueryClient();
   const textareaRef = useAutoResize(text, 5);
-  const attachRef = useRef(null);
 
-  // Close attach menu on outside click
-  useEffect(() => {
-    function handle(e) {
-      if (attachRef.current && !attachRef.current.contains(e.target)) {
-        setAttachOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, []);
-
-  async function handleSend() {
-    // todo: reply id
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    try {
-      await sendMessage(trimmed, otherProfile.handle);
+  const mutation = useMutation({
+    mutationFn: (messageText) => sendMessage(messageText, otherProfile.handle),
+    onSuccess: () => {
       setText("");
-    } catch (err) {
-      console.log("Failed to send message:", err);
-    }
+      // Invalidate the messages query so the new message appears
+      queryClient.invalidateQueries({
+        queryKey: ["messages", otherProfile.handle],
+      });
+    },
+    onError: (err) => {
+      console.error("Failed to send message:", err);
+    },
+  });
+
+  function handleSend() {
+    const trimmed = text.trim();
+    if (!trimmed || mutation.isPending) return;
+    mutation.mutate(trimmed);
   }
 
   function handleKeyDown(e) {
@@ -45,9 +36,10 @@ export default function MessageInput({ otherProfile }) {
   }
 
   const hasText = text.trim().length > 0;
+  const canSend = hasText && !mutation.isPending;
 
   return (
-    <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3">
+    <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3">
       <div className="flex items-end gap-2">
         <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2 flex items-end">
           <textarea
@@ -57,26 +49,35 @@ export default function MessageInput({ otherProfile }) {
             onKeyDown={handleKeyDown}
             placeholder="Message"
             rows={1}
+            disabled={mutation.isPending}
             className="
               w-full bg-transparent resize-none outline-none
               text-sm text-gray-900 dark:text-gray-100
               placeholder-gray-400 dark:placeholder-gray-500
               leading-relaxed max-h-32 overflow-y-auto scrollbar-thin
+              disabled:opacity-50
             "
           />
         </div>
 
         <button
-          onClick={hasText ? handleSend : undefined}
+          onClick={handleSend}
+          disabled={!canSend}
           className={`
-            flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all
+            shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all
             ${
-              hasText
+              canSend
                 ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
             }
           `}
-          aria-label={hasText ? "Send" : "Voice message"}
+          aria-label={
+            mutation.isPending
+              ? "Sending..."
+              : hasText
+                ? "Send"
+                : "Voice message"
+          }
         >
           <SendIcon className="w-5 h-5" />
         </button>
