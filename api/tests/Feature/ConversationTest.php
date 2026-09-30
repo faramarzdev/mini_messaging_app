@@ -207,4 +207,48 @@ class ConversationTest extends TestCase
 
         $this->assertTrue($conversation->fresh()->last_activity_at->equalTo($original));
     }
+
+    #[Test]
+    public function two_users_cannot_make_two_conversations()
+    {
+        $senderUser = User::factory()->create();
+        $senderProfile = $senderUser->profile;
+        $receiverUser = User::factory()->create();
+        $receiverProfile = $receiverUser->profile;
+
+        [$lowerProfileId, $higherProfileId] = Conversation::normalizeProfiles($senderProfile->id, $receiverProfile->id);
+
+        $this->actingAs($senderUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $receiverUser->profile->handle,
+                'body' => 'test message',
+            ])
+            ->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $lowerProfileId,
+            'higher_profile_id' => $higherProfileId,
+        ]);
+        $this->assertDatabaseMissing(Conversation::class, [
+            'lower_profile_id' => $higherProfileId,
+            'higher_profile_id' => $lowerProfileId,
+        ]);
+        $this->assertDatabaseCount(Conversation::class, 1);
+
+        // send a message from the other profile
+        $this->actingAs($receiverUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $senderUser->profile->handle,
+                'body' => 'test message',
+            ])
+            ->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $lowerProfileId,
+            'higher_profile_id' => $higherProfileId,
+        ]);
+        $this->assertDatabaseMissing(Conversation::class, [
+            'lower_profile_id' => $higherProfileId,
+            'higher_profile_id' => $lowerProfileId,
+        ]);
+        $this->assertDatabaseCount(Conversation::class, 1);
+    }
 }
