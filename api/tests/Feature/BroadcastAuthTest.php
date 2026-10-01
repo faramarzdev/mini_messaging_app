@@ -7,15 +7,12 @@ use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class BroadcastAuthTest extends TestCase
 {
-    use RefreshDatabase;
-
     #[Test]
     public function conversation_participant_can_subscribe_to_their_conversation_channel()
     {

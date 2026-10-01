@@ -8,7 +8,6 @@ use App\Events\UserTyping;
 use App\Models\Channel;
 use App\Models\Conversation;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
@@ -16,12 +15,15 @@ use Tests\TestCase;
 
 class UserTypingTest extends TestCase
 {
-    use RefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Event::fake([UserTyping::class]);
+    }
 
     #[Test]
     public function authenticated_user_can_trigger_typing_on_conversation()
     {
-        Event::fake([UserTyping::class]);
 
         $sender = User::factory()->create();
         $receiver = User::factory()->create();
@@ -42,7 +44,6 @@ class UserTypingTest extends TestCase
     #[Test]
     public function user_cannot_trigger_typing_on_others_conversation()
     {
-        Event::fake([UserTyping::class]);
 
         $user = User::factory()->create();
 
@@ -60,7 +61,6 @@ class UserTypingTest extends TestCase
     #[Test]
     public function guest_cannot_trigger_typing_on_conversation()
     {
-        Event::fake([UserTyping::class]);
 
         $conversation = Conversation::factory()->create();
 
@@ -73,7 +73,6 @@ class UserTypingTest extends TestCase
     #[Test]
     public function authenticated_user_can_trigger_typing_on_group()
     {
-        Event::fake([UserTyping::class]);
 
         $member = User::factory()->create();
 
@@ -97,7 +96,6 @@ class UserTypingTest extends TestCase
     #[Test]
     public function not_members_cannot_trigger_typing_on_group()
     {
-        Event::fake([UserTyping::class]);
 
         $user = User::factory()->create();
 
@@ -117,7 +115,6 @@ class UserTypingTest extends TestCase
     #[Test]
     public function guest_cannot_trigger_typing_on_group()
     {
-        Event::fake([UserTyping::class]);
 
         $group = Channel::factory()->create([
             'type' => ChannelType::Group->value,

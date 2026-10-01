@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesChannels;
 use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
@@ -15,7 +17,7 @@ use function PHPUnit\Framework\assertEquals;
 
 class ConversationTest extends TestCase
 {
-    use CreatesConversations, RefreshDatabase;
+    use CreatesChannels, CreatesConversations;
 
     #[Test]
     public function user_can_get_their_conversations()
@@ -148,27 +150,13 @@ class ConversationTest extends TestCase
     #[Test]
     public function user_cannot_hide_others_conversations()
     {
-        $lowerUser = User::factory()->create();
-        $lowerProfile = $lowerUser->profile;
-
-        $user = User::factory()->create();
-        $profile = $user->profile;
-
-        $conversationToCreate = [
-            'lower_profile_id' => $lowerProfile->id,
-            'is_available_for_lower_profile' => true,
-            'higher_profile_id' => $profile->id,
-            'is_available_for_higher_profile' => true,
-        ];
-        $conversation = Conversation::factory()->create($conversationToCreate);
-
-        $this->assertDatabaseHas(Conversation::class, $conversationToCreate);
+        [$conversation] = $this->createConversation();
 
         $response = $this->actingAs(User::factory()->create(), 'sanctum')
             ->postJson(route('conversations.hide', ['conversation' => $conversation->id]));
         $response->assertStatus(Response::HTTP_FORBIDDEN);
 
-        $this->assertDatabaseHas(Conversation::class, $conversationToCreate);
+        $this->assertDatabaseHas(Conversation::class, $conversation->toArray());
     }
 
     #[Test]
@@ -206,5 +194,51 @@ class ConversationTest extends TestCase
         )->assertSuccessful();
 
         $this->assertTrue($conversation->fresh()->last_activity_at->equalTo($original));
+    }
+
+    #[Test]
+    public function two_users_cannot_make_two_conversations()
+    {
+        Event::fake([MessageSent::class]);
+
+        $senderUser = User::factory()->create();
+        $senderProfile = $senderUser->profile;
+        $receiverUser = User::factory()->create();
+        $receiverProfile = $receiverUser->profile;
+
+        [$lowerProfileId, $higherProfileId] = Conversation::normalizeProfiles($senderProfile->id, $receiverProfile->id);
+
+        $this->actingAs($senderUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $receiverUser->profile->handle,
+                'body' => 'test message',
+            ])
+            ->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $lowerProfileId,
+            'higher_profile_id' => $higherProfileId,
+        ]);
+        $this->assertDatabaseMissing(Conversation::class, [
+            'lower_profile_id' => $higherProfileId,
+            'higher_profile_id' => $lowerProfileId,
+        ]);
+        $this->assertDatabaseCount(Conversation::class, 1);
+
+        // send a message from the other profile
+        $this->actingAs($receiverUser, 'sanctum')
+            ->postJson(route('message.store'), [
+                'receiver_handle' => $senderUser->profile->handle,
+                'body' => 'test message',
+            ])
+            ->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseHas(Conversation::class, [
+            'lower_profile_id' => $lowerProfileId,
+            'higher_profile_id' => $higherProfileId,
+        ]);
+        $this->assertDatabaseMissing(Conversation::class, [
+            'lower_profile_id' => $higherProfileId,
+            'higher_profile_id' => $lowerProfileId,
+        ]);
+        $this->assertDatabaseCount(Conversation::class, 1);
     }
 }

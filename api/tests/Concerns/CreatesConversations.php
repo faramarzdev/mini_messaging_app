@@ -14,7 +14,7 @@ trait CreatesConversations
      * @param  User|null  $lowerUser
      * @param  User|null  $higherUser
      * @param  bool  $makeMessage message will be created using lowerUser
-     * @return array
+     * @return array: [$conversation, $lowerUser, $higherUser, $message]
      */
     protected function createConversation(?User $lowerUser = null, ?User $higherUser = null, bool $makeMessage = false): array
     {

@@ -5,14 +5,10 @@ namespace Tests\Feature;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\MessageableType;
-use App\Models\Channel;
 use App\Models\ChannelMember;
-use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
-use App\Services\ChannelService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\CreatesChannels;
@@ -21,20 +17,18 @@ use Tests\TestCase;
 
 class ChatTest extends TestCase
 {
-    use CreatesChannels, CreatesConversations, RefreshDatabase;
+    use CreatesChannels, CreatesConversations;
 
     private User $user;
 
     private Profile $profile;
-
-    private ChannelService $channelService;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->user = User::factory()->create();
-        $this->channelService = app(ChannelService::class);
+
         $this->profile = $this->user->profile; // assumes ProfileObserver creates profile on user creation
         $this->actingAs($this->user);
     }
@@ -51,8 +45,7 @@ class ChatTest extends TestCase
     #[Test]
     public function my_chats_includes_conversations(): void
     {
-        $other = User::factory()->create();
-        $conversation = $this->createConversationWithMessage($this->profile, $other->profile);
+        [$conversation] = $this->createConversation($this->user);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -65,7 +58,7 @@ class ChatTest extends TestCase
     #[Test]
     public function my_chats_includes_joined_channels(): void
     {
-        $channel = $this->createChannelWithMember($this->profile);
+        [$channel, $owner] = $this->createChannel(member: $this->user);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -78,9 +71,8 @@ class ChatTest extends TestCase
     #[Test]
     public function my_chats_merges_conversations_and_channels(): void
     {
-        $other = User::factory()->create();
-        $this->createConversationWithMessage($this->profile, $other->profile);
-        $this->createChannelWithMember($this->profile);
+        $this->createConversation($this->user);
+        $this->createChannel(member: $this->user);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -94,13 +86,11 @@ class ChatTest extends TestCase
     #[Test]
     public function my_chats_sorted_by_most_recent_message_first(): void
     {
-        $other = User::factory()->create();
-
         Carbon::setTestNow('2025-01-01 12:00:00');
-        $this->createConversationWithMessage($this->profile, $other->profile);
+        $this->createConversation($this->user);
 
         Carbon::setTestNow('2025-01-01 12:00:10');
-        $this->createChannelWithMember($this->profile, withMessage: true);
+        $this->createChannel(member: $this->user);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -114,8 +104,7 @@ class ChatTest extends TestCase
     #[Test]
     public function conversation_item_has_correct_shape(): void
     {
-        $other = User::factory()->create();
-        $this->createConversationWithMessage($this->profile, $other->profile);
+        $this->createConversation($this->user, makeMessage: true);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -143,8 +132,8 @@ class ChatTest extends TestCase
         $otherA = User::factory()->create(['name' => 'Sender A']);
         $otherB = User::factory()->create(['name' => 'Sender B']);
 
-        $this->createConversationWithMessage($this->profile, $otherA->profile);   // sender = viewer
-        $this->createConversationWithMessage($otherB->profile, $this->profile);   // sender = otherB
+        $this->createConversation($this->user, $otherA, true);   // acting as the sender
+        $this->createConversation($otherB, $this->user, true);   // acting as the receiver
 
         $response = $this->getJson(route('chats.my'));
 
@@ -157,14 +146,14 @@ class ChatTest extends TestCase
 
         // last_message.sender.name requires lastMessage.sender.profileable to resolve
         foreach ($response->json('data') as $item) {
-            $this->assertNotNull($item['last_message']['sender']['name'] ?? null, 'Missing sender name for item: '.json_encode($item));
+            $this->assertNotNull($item['last_message']['sender']['name'] ?? null);
         }
     }
 
     #[Test]
     public function channel_item_has_correct_shape(): void
     {
-        $this->createChannelWithMember($this->profile, withMessage: true);
+        $this->createChannel($this->user);
 
         $response = $this->getJson(route('chats.my'));
 
@@ -181,8 +170,7 @@ class ChatTest extends TestCase
     #[Test]
     public function unread_count_is_zero_when_all_messages_read(): void
     {
-        $other = User::factory()->create();
-        $conversation = $this->createConversationWithMessage($this->profile, $other->profile);
+        [$conversation] = $this->createConversation($this->user, makeMessage: true);
 
         // Mark as read by setting last_read to the last message
         $conversation->update([
@@ -199,7 +187,7 @@ class ChatTest extends TestCase
     public function unread_count_reflects_messages_after_last_read(): void
     {
         $other = User::factory()->create();
-        $conversation = $this->createConversationWithMessage($this->profile, $other->profile);
+        [$conversation] = $this->createConversation($this->user);
         $firstMessageId = $conversation->last_message_id;
 
         // Send two more messages from the other profile
@@ -230,12 +218,7 @@ class ChatTest extends TestCase
     #[Test]
     public function channel_unread_count_reflects_messages_after_last_read(): void
     {
-        $owner = User::factory()->create();
-        $channel = $this->channelService->createChannel([
-            'name' => 'Test Channel',
-            'visibility' => 'public',
-            'type' => 'group',
-        ], $owner);
+        [$channel, $owner] = $this->createChannel();
         $firstMessage = Message::factory()->create([
             'sender_id' => $owner->profile->id,
             'messageable_type' => MessageableType::Channel->value,
@@ -273,12 +256,7 @@ class ChatTest extends TestCase
     #[Test]
     public function does_not_include_channels_user_has_not_joined(): void
     {
-        // Channel exists but user is not a member
-        $owner = User::factory()->create();
-        $this->channelService->createChannel([
-            'name' => 'Some Channel',
-            'visibility' => 'public',
-        ], $owner);
+        $this->createChannel();
 
         $response = $this->getJson(route('chats.my'));
 
@@ -288,12 +266,7 @@ class ChatTest extends TestCase
     #[Test]
     public function does_not_include_pending_channel_memberships(): void
     {
-        $owner = User::factory()->create();
-        $channel = $this->channelService->createChannel([
-            'name' => 'Private Channel',
-            'visibility' => 'private',
-            'type' => 'group',
-        ], $owner);
+        [$channel] = $this->createChannel();
 
         ChannelMember::create([
             'channel_id' => $channel->id,
@@ -323,59 +296,5 @@ class ChatTest extends TestCase
         $ids = collect($response->json('data'))->pluck('id')->all();
 
         $this->assertSame([$channel->id, $conversation->id], $ids);
-    }
-
-    private function createConversationWithMessage(Profile $profileA, Profile $profileB): Conversation
-    {
-        [$lower, $higher] = Conversation::normalizeProfiles($profileA->id, $profileB->id);
-
-        $conversation = Conversation::create([
-            'lower_profile_id' => $lower,
-            'higher_profile_id' => $higher,
-            'is_available_for_lower_profile' => true,
-            'is_available_for_higher_profile' => true,
-            'lower_profile_last_read_message_id' => null,
-            'higher_profile_last_read_message_id' => null,
-        ]);
-
-        $message = Message::factory()->create([
-            'sender_id' => $profileA->id,
-            'messageable_type' => MessageableType::Conversation->value,
-            'messageable_id' => $conversation->id,
-        ]);
-
-        $conversation->update(['last_message_id' => $message->id]);
-
-        return $conversation->fresh();
-    }
-
-    private function createChannelWithMember(Profile $profile, bool $withMessage = false): Channel
-    {
-        $owner = User::factory()->create();
-        $channel = $this->channelService->createChannel([
-            'name' => 'Test Channel',
-            'visibility' => 'public',
-            'type' => 'group',
-        ], $owner);
-
-        ChannelMember::factory()->create([
-            'channel_id' => $channel->id,
-            'profile_id' => $profile->id,
-            'status' => ChannelMemberStatus::Approved->value,
-            'role' => ChannelRoles::Member->value,
-            'joined_at' => now(),
-        ]);
-
-        if ($withMessage) {
-            $message = Message::factory()->create([
-                'sender_id' => $profile->id,
-                'messageable_type' => MessageableType::Channel->value,
-                'messageable_id' => $channel->id,
-            ]);
-            $channel->update(['last_message_id' => $message->id]);
-            $channel = $channel->fresh();
-        }
-
-        return $channel;
     }
 }
