@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         Profile::observe(ProfileObserver::class);
 
         Model::preventLazyLoading();
+        Model::preventSilentlyDiscardingAttributes(! app()->isProduction());
 
         // Default API rate limiter (required for throttleApi())
         RateLimiter::for('api', function (Request $request) {
