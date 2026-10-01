@@ -5,23 +5,25 @@ namespace Tests\Feature;
 use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\ProfileableTypes;
+use App\Http\Resources\ProfileResource;
 use App\Jobs\DeleteMediaFileJob;
 use App\Models\Channel;
 use App\Models\Profile;
 use App\Models\ProfilePicture;
 use App\Models\User;
-use App\Services\ChannelService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\LazyLoadingViolationException;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesChannels;
+use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesChannels, CreatesConversations;
 
     #[Test]
     public function user_creation_would_create_the_associated_profile()
@@ -89,18 +91,13 @@ class ProfileTest extends TestCase
     public function can_get_channel_profiles_by_handle_set_default()
     {
         $user = User::factory()->create();
-
-        $channelsOwner = User::factory()->create();
-        $channelService = new ChannelService;
-        $channel = $channelService->createChannel([
-            'name' => 'Channel Name',
-        ], $channelsOwner);
+        [$channel] = $this->createChannel();
         $response = $this->actingAs($user, 'sanctum')
             ->getJson(route('profile.show', ['profile' => $channel->profile->handle]));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJson([
-            'profileable_type' => ProfileableTypes::Channel->value,
-            'profileable' => ['name' => 'Channel Name'],
+            'handle' => $channel->profile->handle,
+            'name' => $channel->name,
         ]);
 
     }
@@ -109,26 +106,20 @@ class ProfileTest extends TestCase
     public function can_get_channel_profiles_by_set_handle()
     {
         $user = User::factory()->create();
+        [$channel] = $this->createChannel();
+        $channel->update(['handle' => 'channelhandle']);
 
-        $channelsOwner = User::factory()->create();
-        $channelService = new ChannelService;
-        $channel = $channelService->createChannel([
-            'name' => 'Channel Name',
-            'handle' => 'channelhandle',
-        ], $channelsOwner);
         $response = $this->actingAs($user, 'sanctum')
-            ->getJson(route('profile.show', ['profile' => $channel->profile->handle]));
+            ->getJson(route('profile.show', ['profile' => 'channelhandle']));
         $response->assertStatus(Response::HTTP_OK);
         $response->assertJson([
             'handle' => 'channelhandle',
-            'profileable_type' => ProfileableTypes::Channel->value,
-            'profileable' => ['name' => 'Channel Name'],
+            'name' => $channel->name,
         ]);
-
     }
 
     #[Test]
-    public function associated_user_can_update_their_user_profile_handle()
+    public function user_can_update_their_profile_handle()
     {
         $user = User::factory()->create();
         $this->assertDatabaseMissing(Profile::class, [
@@ -147,7 +138,7 @@ class ProfileTest extends TestCase
         $this->assertDatabaseCount(Profile::class, 1);
     }
 
-    //    #[Test] // causing takes too long (adds around 60s to tests)
+    //    #[Test] // causing takes too long (adds around 60s to the test)
     //    public function profile_handle_creation_can_create_unique_handle_at_high_rate(): void
     //    {
     //        User::factory(5000)->create(); // user creation creates a profile
@@ -171,7 +162,6 @@ class ProfileTest extends TestCase
             ]);
 
         $response->assertStatus(Response::HTTP_CREATED);
-        //            ->assertJson($postData);
 
         $this->assertDatabaseHas(ProfilePicture::class, [
             'profile_id' => $user->profile->id,
@@ -243,8 +233,7 @@ class ProfileTest extends TestCase
             ->deleteJson(route('profile.picture.destroy', ['profile_picture' => $uuid]));
         $removalResponse->assertStatus(Response::HTTP_NO_CONTENT);
 
-        Queue::assertPushed(DeleteMediaFileJob::class, fn ($job) => $job->disk === 'profile_pictures' && $job->path === $path
-        );
+        Queue::assertPushed(DeleteMediaFileJob::class, fn ($job) => $job->disk === 'profile_pictures' && $job->path === $path);
         $this->assertDatabaseMissing(ProfilePicture::class, ['uuid' => $uuid]);
     }
 
@@ -282,16 +271,11 @@ class ProfileTest extends TestCase
     #[Test]
     public function channel_profile_picture_can_be_set_by_managements()
     {
-        $channelsOwner = User::factory()->create();
-        $channelService = new ChannelService;
-        $channel = $channelService->createChannel([
-            'name' => 'Channel Name',
-        ], $channelsOwner);
-
+        [$channel, $owner] = $this->createChannel();
         Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
-        $response = $this->actingAs($channelsOwner, 'sanctum')
+        $response = $this->actingAs($owner, 'sanctum')
             ->postJson(route('profile.picture.store', ['profile' => $channel->profile->handle]), [
                 'image' => $file,
             ]);
@@ -307,17 +291,13 @@ class ProfileTest extends TestCase
     #[Test]
     public function members_cannot_set_profile_picture_for_channel()
     {
-        $channelsOwner = User::factory()->create();
-        $channelService = new ChannelService;
-        $channel = $channelService->createChannel([
-            'name' => 'Channel Name',
-        ], $channelsOwner);
+        $member = User::factory()->create();
+        [$channel] = $this->createChannel(member: $member);
 
         Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
-        $impersonator = User::factory()->create();
-        $response = $this->actingAs($impersonator, 'sanctum')
+        $response = $this->actingAs($member, 'sanctum')
             ->postJson(route('profile.picture.store', ['profile' => $channel->profile->handle]), [
                 'image' => $file,
             ]);
@@ -352,12 +332,7 @@ class ProfileTest extends TestCase
     #[Test]
     public function cannot_upload_profile_picture_when_limit_exceeded_channel()
     {
-        $channelsOwner = User::factory()->create();
-        $channelService = new ChannelService;
-        $channel = $channelService->createChannel([
-            'name' => 'Channel Name',
-        ], $channelsOwner);
-
+        [$channel, $owner] = $this->createChannel();
         ProfilePicture::factory()
             ->count(config('app.max_profile_picture_per_channel'))
             ->create(['profile_id' => $channel->profile->id]);
@@ -365,7 +340,7 @@ class ProfileTest extends TestCase
         Storage::fake('profile_pictures');
         $file = UploadedFile::fake()->image('test_pp.jpg', 350, 350);
 
-        $response = $this->actingAs($channelsOwner, 'sanctum')
+        $response = $this->actingAs($owner, 'sanctum')
             ->postJson(route('profile.picture.store', ['profile' => $channel->profile->handle]), [
                 'image' => $file,
             ]);
@@ -382,7 +357,7 @@ class ProfileTest extends TestCase
         // fetch TWO rows — this is what actually triggers the flag
         $profiles = Profile::query()->whereIn('id', [$userA->profile->id, $userB->profile->id])->get();
 
-        $this->expectException(\Illuminate\Database\LazyLoadingViolationException::class);
-        (new \App\Http\Resources\ProfileResource($profiles->first()))->toArray(request());
+        $this->expectException(LazyLoadingViolationException::class);
+        (new ProfileResource($profiles->first()))->toArray(request());
     }
 }
