@@ -8,10 +8,10 @@ use App\Enums\MessageableType;
 use App\Enums\ProfileableTypes;
 use App\Models\Channel;
 use App\Models\ChannelMember;
-use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,26 +23,37 @@ class ChannelService
 
             $now = Carbon::now();
 
+            $allowedChannelFields = [
+                'name',
+                'description',
+                'visibility',
+                'type',
+                'can_join_by_link',
+                'confirm_joined',
+            ];
+            $channelData = Arr::only($validatedData, $allowedChannelFields);
+
+            $allowedProfileFields = [
+                'handle',
+                'featured_picture',
+            ];
+            $profileData = Arr::only($validatedData, $allowedProfileFields);
+
             // 1. Create the channel
             $channel = Channel::query()->create([
+                ...$channelData,
                 'owner_id' => $owner->id,
                 'messages_count' => 0,
                 'last_activity_at' => $now,
-                ...$validatedData,
-
             ]);
 
             // 2. Create the channel's profile
             $profileToCreate = [
+                ...$profileData,
                 'profileable_id' => $channel->id,
                 'profileable_type' => ProfileableTypes::Channel->value,
             ];
-            if (isset($validatedData['handle'])) {
-                $profileToCreate['handle'] = $validatedData['handle'];
-            }
-            if (isset($validatedData['featured_picture'])) {
-                $profileToCreate['featured_picture'] = $validatedData['featured_picture'];
-            }
+
             Profile::create($profileToCreate);
 
             ChannelMember::create([
