@@ -107,7 +107,7 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
         [$channel] = $this->createChannel();
-        $channel->update(['handle' => 'channelhandle']);
+        $channel->profile->update(['handle' => 'channelhandle']);
 
         $response = $this->actingAs($user, 'sanctum')
             ->getJson(route('profile.show', ['profile' => 'channelhandle']));
