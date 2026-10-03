@@ -31,6 +31,7 @@ class UserTypingController extends Controller
         }
 
         $writer = $request->currentProfile();
+        $writer->setRelation('profileable', $request->user());
 
         $messageable = null;
         if ($request->conversation_id) {

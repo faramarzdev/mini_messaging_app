@@ -20,7 +20,7 @@ class MessageSent implements ShouldBroadcast
     public function __construct(
         public Message $message
     ) {
-        $this->message = $message->load('sender');
+        $this->message = $message->loadMissing('sender.profileable');
     }
 
     /**
