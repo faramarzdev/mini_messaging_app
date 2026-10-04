@@ -58,7 +58,7 @@ class MessageController extends Controller
 
         $validated = $request->validated();
 
-        $profile = $request->currentProfile();
+        $senderProfile = $request->currentProfile();
         $receiverProfile = Profile::where('handle', $validated['receiver_handle'])->firstOrFail();
 
         // todo: implement and check if the sender is not blocked by the receiver.
@@ -68,24 +68,24 @@ class MessageController extends Controller
         if ($receiverProfile->profileable_type === ProfileableTypes::Channel->value) {
             $messageable = $receiverProfile->profileable;
         } else {
-            $messageable = ConversationService::getOrCreateBetween($profile, $receiverProfile);
+            $messageable = ConversationService::getOrCreateBetween($senderProfile, $receiverProfile);
             $conversation = $messageable;
         }
 
         abort_unless(
-            $messageable->canReceiveMessageFrom($profile),
+            $messageable->canReceiveMessageFrom($senderProfile),
             Response::HTTP_FORBIDDEN,
         );
 
         try {
-            $message = DB::transaction(function () use ($profile, $messageable, $validated, $conversation) {
+            $message = DB::transaction(function () use ($senderProfile, $messageable, $validated, $conversation) {
                 // todo: prepare and add media when uploaded
                 //      also the type of the message
                 $type = MessageType::Text->value;
                 $body = $validated['body'];
                 $reply_id = $validated['reply_id'] ?? null;
 
-                $message = $messageable->addMessage($profile, [
+                $message = $messageable->addMessage($senderProfile, [
                     'body' => $body,
                     'type' => $type,
                     'reply_id' => $reply_id,
@@ -100,12 +100,19 @@ class MessageController extends Controller
                     $toUpdate['is_available_for_lower_profile'] = true;
                     $toUpdate['is_available_for_higher_profile'] = true;
 
-                    if (! $conversation->lower_profile_last_read_message_id) {
+                    $isSenderLower = $senderProfile->id === $conversation->lower_profile_id;
+                    if ($isSenderLower) {
+                        $toUpdate['lower_profile_last_read_message_id'] = $message->id;
+                    }else{
+                        $toUpdate['higher_profile_last_read_message_id'] = $message->id;
+                    }
+
+                    /* if (! $conversation->lower_profile_last_read_message_id) {
                         $toUpdate['lower_profile_last_read_message_id'] = $message->id;
                     }
                     if (! $conversation->higher_profile_last_read_message_id) {
                         $toUpdate['higher_profile_last_read_message_id'] = $message->id;
-                    }
+                    } */
 
                 }
                 // update user anchor
