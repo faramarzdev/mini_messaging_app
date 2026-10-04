@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\MessageableType;
+use App\Events\MessageSent;
 use App\Models\ChannelMember;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\CreatesChannels;
 use Tests\Concerns\CreatesConversations;
@@ -296,5 +299,39 @@ class ChatTest extends TestCase
         $ids = collect($response->json('data'))->pluck('id')->all();
 
         $this->assertSame([$channel->id, $conversation->id], $ids);
+    }
+
+    #[Test]
+    public function starting_a_conversation_sets_correct_unread_count(): void
+    {
+        Event::fake([MessageSent::class]);
+        $otherUser = User::factory()->create();
+        $this->postJson(route('message.store'), [
+            'receiver_handle' => $otherUser->profile->handle,
+            'body' => 'test',
+        ])->assertStatus(Response::HTTP_CREATED);
+
+
+        $response = $this->actingAs($otherUser)->getJson(route('chats.my'));
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame(1, $response->json('data.0.unread_count'));
+    }
+
+    #[Test]
+    public function senders_unread_count_change_to_zero(): void
+    {
+        Event::fake([MessageSent::class]);
+        [, , $otherUser] = $this->createConversation($this->user);
+        foreach (['one', 'two', 'three', 'four', 'five'] as $body) {
+            $this->postJson(route('message.store'), [
+                'receiver_handle' => $otherUser->profile->handle,
+                'body' => "Message $body",
+            ])->assertStatus(Response::HTTP_CREATED);
+        }
+
+        $response = $this->getJson(route('chats.my'));
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame(0, $response->json('data.0.unread_count'));
     }
 }
