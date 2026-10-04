@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MessageType;
-use App\Enums\ProfileableTypes;
 use App\Events\MessageRead;
 use App\Events\MessageSent;
 use App\Http\Requests\IndexMessageRequest;
@@ -16,12 +15,10 @@ use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
-use App\Services\ConversationService;
 use App\Services\MessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class MessageController extends Controller
@@ -34,7 +31,7 @@ class MessageController extends Controller
         $this->authorize('viewMessages', [Message::class, $profile]);
         $viewerProfile = $request->currentProfile();
 
-        $messageable = MessageService::resolveMessageable($profile, $viewerProfile);
+        $messageable = MessageService::resolveMessageableForViewing($profile, $viewerProfile);
         if (! $messageable) {
             return response()->json(['message' => 'No conversation or channel found'], Response::HTTP_NOT_FOUND);
         }
@@ -52,7 +49,7 @@ class MessageController extends Controller
         return response()->json(new MessageCollection($page), Response::HTTP_OK);
     }
 
-    public function store(StoreMessageRequest $request): JsonResponse
+    public function store(StoreMessageRequest $request, MessageService $messageService): JsonResponse
     {
         $this->authorize('create', Message::class);
 
@@ -61,75 +58,28 @@ class MessageController extends Controller
         $senderProfile = $request->currentProfile();
         $receiverProfile = Profile::where('handle', $validated['receiver_handle'])->firstOrFail();
 
+        // resolveMessageableForSending creates a conversation (if not exists), and if creating message fails, it would still show up on receiver's chat list
+        $messageable = $messageService->resolveMessageableForSending($senderProfile, $receiverProfile);
+        abort_if(! $messageable, Response::HTTP_NOT_FOUND);
+
         // todo: implement and check if the sender is not blocked by the receiver.
-
-        $conversation = false;
-
-        if ($receiverProfile->profileable_type === ProfileableTypes::Channel->value) {
-            $messageable = $receiverProfile->profileable;
-        } else {
-            $messageable = ConversationService::getOrCreateBetween($senderProfile, $receiverProfile);
-            $conversation = $messageable;
-        }
-
         abort_unless(
             $messageable->canReceiveMessageFrom($senderProfile),
             Response::HTTP_FORBIDDEN,
         );
 
-        try {
-            $message = DB::transaction(function () use ($senderProfile, $messageable, $validated, $conversation) {
-                // todo: prepare and add media when uploaded
-                //      also the type of the message
-                $type = MessageType::Text->value;
-                $body = $validated['body'];
-                $reply_id = $validated['reply_id'] ?? null;
+        $message = $messageService->send($senderProfile, $messageable, $validated);
 
-                $message = $messageable->addMessage($senderProfile, [
-                    'body' => $body,
-                    'type' => $type,
-                    'reply_id' => $reply_id,
-                ]);
-
-                $toUpdate = [
-                    'last_message_id' => $message->id,
-                    'last_activity_at' => $message->created_at,
-                ];
-                if ($conversation) {
-                    // the conversation must appear on both side (even if it has been removed/hiden)
-                    $toUpdate['is_available_for_lower_profile'] = true;
-                    $toUpdate['is_available_for_higher_profile'] = true;
-
-                    $isSenderLower = $senderProfile->id === $conversation->lower_profile_id;
-                    if ($isSenderLower) {
-                        $toUpdate['lower_profile_last_read_message_id'] = $message->id;
-                    }else{
-                        $toUpdate['higher_profile_last_read_message_id'] = $message->id;
-                    }
-
-                    /* if (! $conversation->lower_profile_last_read_message_id) {
-                        $toUpdate['lower_profile_last_read_message_id'] = $message->id;
-                    }
-                    if (! $conversation->higher_profile_last_read_message_id) {
-                        $toUpdate['higher_profile_last_read_message_id'] = $message->id;
-                    } */
-
-                }
-                // update user anchor
-
-                $messageable->update($toUpdate);
-
-                return $message;
-            });
-
-            $message->loadMissing(['sender.profileable', 'sender.featuredPicture', 'messageable']);
-
-            MessageSent::dispatch($message);
+        if ($message) {
+            // the message is already sent so the event handle shouldn't change the return
+            try {
+                MessageSent::dispatch($message);
+            } catch (\Throwable $e) {
+                Log::error($e);
+            }
 
             return response()->json(new MessageResource($message), Response::HTTP_CREATED);
-        } catch (\Throwable $e) {
-            Log::error($e);
-
+        } else {
             return response()->json([], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
