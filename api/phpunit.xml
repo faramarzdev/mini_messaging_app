@@ -37,8 +37,7 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
 
-        <env name="BROADCAST_DRIVER" value="log"/>
-        <env name="BROADCAST_CONNECTION" value="reverb"/>
+        <env name="BROADCAST_CONNECTION" value="reverb" force="true"/>
         <env name="REVERB_APP_ID" value="testing"/>
         <env name="REVERB_APP_KEY" value="testing-key"/>
         <env name="REVERB_APP_SECRET" value="testing-secret"/>
