@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ChannelMemberStatus;
+use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\MessageableType;
 use App\Events\MessageRead;
@@ -1171,5 +1172,72 @@ class MessageTest extends TestCase
         $response->assertJsonPath('meta.has_more_after', true);
         // anchor message must be in the payload
         $this->assertContains($anchor, collect($response->json('data'))->pluck('id')->all());
+    }
+
+    #[Test]
+    public function member_can_message_private_group(): void
+    {
+        [$group] = $this->createChannel(channelType: ChannelType::Group, member: $this->user, channelVisibility: ChannelVisibility::Private);
+        $this->assertDatabaseCount(Message::class, 0);
+
+        $response = $this->postJson(route('message.store'), [
+            'receiver_handle' => $group->profile->handle,
+            'body' => 'Test Message!',
+        ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseCount(Message::class, 1);
+    }
+
+    #[Test]
+    public function non_member_cannot_message_private_group(): void
+    {
+        [$group] = $this->createChannel(channelType: ChannelType::Group, channelVisibility: ChannelVisibility::Private);
+        $this->assertDatabaseCount(Message::class, 0);
+
+        $response = $this->postJson(route('message.store'), [
+            'receiver_handle' => $group->profile->handle,
+            'body' => 'Test Message!',
+        ]);
+        $response->assertStatus(Response::HTTP_FORBIDDEN);
+        $this->assertDatabaseCount(Message::class, 0);
+    }
+
+    #[Test]
+    public function any_nonblocked_user_can_message_public_group(): void
+    {
+        [$group] = $this->createChannel(channelType: ChannelType::Group);
+        $this->assertDatabaseCount(Message::class, 0);
+
+        $response = $this->postJson(route('message.store'), [
+            'receiver_handle' => $group->profile->handle,
+            'body' => 'Test Message!',
+        ]);
+        $response->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseCount(Message::class, 1);
+    }
+
+    #[Test]
+    public function blocked_member_cannot_message_the_group(): void
+    {
+        [$group] = $this->createChannel(channelType: ChannelType::Group);
+        ChannelMember::factory()->state([
+            'channel_id' => $group->id,
+            'profile_id' => $this->user->profile->id,
+            'status' => ChannelMemberStatus::Blocked->value,
+        ])->create();
+        $this->assertDatabaseHas(ChannelMember::class, [
+            'channel_id' => $group->id,
+            'profile_id' => $this->user->profile->id,
+            'status' => ChannelMemberStatus::Blocked->value,
+        ]);
+
+        $this->assertDatabaseCount(Message::class, 0);
+
+        $response = $this->postJson(route('message.store'), [
+            'receiver_handle' => $group->profile->handle,
+            'body' => 'Test Message!',
+        ]);
+        $response->assertStatus(Response::HTTP_FORBIDDEN);
+        $this->assertDatabaseCount(Message::class, 0);
     }
 }
