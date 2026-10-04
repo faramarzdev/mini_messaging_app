@@ -110,7 +110,7 @@ class ChannelMemberController extends Controller
         if ($inChannel->role === ChannelRoles::Owner->value) {
             return response()->json(['message' => 'Cannot kick the owner!'], Response::HTTP_FORBIDDEN);
         }
-        $inChannel->status = ChannelMemberStatus::Left->value;
+        $inChannel->status = ChannelMemberStatus::Blocked->value;
         $inChannel->role = ChannelRoles::Member->value;
         $inChannel->save();
 
