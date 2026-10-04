@@ -74,18 +74,14 @@ class Channel extends Model implements Messageable
 
     public function profileRole()
     {
-        $requester = request()->user()?->profile;
-        if (! $requester) {
+        $currentProfile = request()->currentProfile();
+        if (! $currentProfile) {
             return null;
         }
-        $inChannel = ChannelMember::where('channel_id', '=', $this->id)
-            ->where('profile_id', '=', $requester->id)
-            ->whereIn('status', [ChannelMemberStatus::Approved->value, ChannelMemberStatus::Invited->value]);
-        if ($inChannel->exists()) {
-            return $inChannel->first()->role;
-        }
 
-        return null;
+        return $this->members()
+            ->where('profile_id', $currentProfile->id)
+            ->first()?->role;
     }
 
     public static function create(array $attributes = [])

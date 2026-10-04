@@ -24,14 +24,10 @@ class ConversationService
     public static function getBetween(Profile $profileA, Profile $profileB): ?Conversation
     {
         [$lowerId, $higherId] = Conversation::normalizeProfiles($profileA->id, $profileB->id);
-        $conversation = Conversation::where('lower_profile_id', $lowerId)
-            ->where('higher_profile_id', $higherId);
-        if ($conversation->exists()) {
-            return $conversation->first();
-        }
 
-        return null;
-
+        return Conversation::where('lower_profile_id', $lowerId)
+            ->where('higher_profile_id', $higherId)
+            ->first();
     }
 
     public function hide(Conversation $conversation, Profile $profile)
