@@ -1008,7 +1008,7 @@ class MessageTest extends TestCase
             'id' => $conversation->id,
             'lower_profile_id' => $sender->profile->id,
             'higher_profile_id' => $reader->profile->id,
-            'lower_profile_last_read_message_id' => $starterMessageId,
+            'lower_profile_last_read_message_id' => $messageId, // after a message sent, the sender's anchor changes to its last message sent
             'higher_profile_last_read_message_id' => $starterMessageId,
         ]);
 
@@ -1026,7 +1026,7 @@ class MessageTest extends TestCase
             'id' => $conversation->id,
             'lower_profile_id' => $sender->profile->id,
             'higher_profile_id' => $reader->profile->id,
-            'lower_profile_last_read_message_id' => $starterMessageId, // todo: after send message, sender's anchor should move to it's last message send
+            'lower_profile_last_read_message_id' => $messageId,
             'higher_profile_last_read_message_id' => $messageId,
         ]);
 
