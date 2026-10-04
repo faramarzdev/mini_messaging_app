@@ -259,7 +259,7 @@ class ChannelTest extends TestCase
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $member->profile->id,
-            'status' => ChannelMemberStatus::Left->value,
+            'status' => ChannelMemberStatus::Blocked->value,
         ]);
     }
 
