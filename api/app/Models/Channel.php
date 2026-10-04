@@ -6,6 +6,7 @@ use App\Contracts\Messageable;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
+use App\Enums\ChannelVisibility;
 use App\Models\Concerns\HasMessages;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -97,8 +98,20 @@ class Channel extends Model implements Messageable
     public function canReceiveMessageFrom(Profile $sender): bool
     {
         if ($this->type === ChannelType::Group->value) {
-            // todo: settings for group to limit post sender
-            return true;
+            // todo: settings for group to limit post per sender per minutes to avoid spamming/floading
+
+            if ($this->visibility === ChannelVisibility::Public->value) {
+                // anyone can message public group unless got blocked
+                return ! $this->allMembers()
+                    ->where('profile_id', $sender->id)
+                    ->where('status', ChannelMemberStatus::Blocked->value)
+                    ->exists();
+            }
+
+            return $this->members()
+                ->where('profile_id', $sender->id)
+                ->exists();
+
         }
 
         return $this->members()
