@@ -4,12 +4,14 @@ namespace App\Services;
 
 use App\DataTransferObjects\MessagePage;
 use App\Enums\MessageableType;
+use App\Enums\MessageType;
 use App\Enums\ProfileableTypes;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Profile;
+use Illuminate\Support\Facades\DB;
 
 class MessageService
 {
@@ -41,7 +43,73 @@ class MessageService
         $messagesAsReceiver->where('is_available_on_sender', false)->delete();
     }
 
-    public static function resolveMessageable(Profile $profile, Profile $viewerProfile): Conversation|Channel|null
+    public function send(Profile $sender, Conversation|Channel $messageable, array $validatedData): Message
+    {
+        $message = DB::transaction(function () use ($sender, $messageable, $validatedData) {
+            // todo: prepare and add media when uploaded
+            //      also the type of the message
+            $type = MessageType::Text->value;
+            $body = $validatedData['body'];
+            $replyId = $validatedData['reply_id'] ?? null;
+
+            $message = $messageable->addMessage($sender, [
+                'body' => $body,
+                'type' => $type,
+                'reply_id' => $replyId,
+            ]);
+
+            $toUpdate = [
+                'last_message_id' => $message->id,
+                'last_activity_at' => $message->created_at,
+            ];
+            if ($messageable instanceof Conversation) {
+                // the conversation must appear on both side (even if it has been removed/hiden)
+                $toUpdate['is_available_for_lower_profile'] = true;
+                $toUpdate['is_available_for_higher_profile'] = true;
+
+                // update sender's anchor
+                $isSenderLower = $sender->id === $messageable->lower_profile_id;
+                if ($isSenderLower) {
+                    $toUpdate['lower_profile_last_read_message_id'] = $message->id;
+                } else {
+                    $toUpdate['higher_profile_last_read_message_id'] = $message->id;
+                }
+            }
+
+            $messageable->update($toUpdate);
+
+            return $message;
+        });
+
+        $message->loadMissing(['sender.profileable', 'sender.featuredPicture', 'messageable']);
+
+        return $message;
+    }
+
+    /***
+     * @param  Profile  $sender
+     * @param  Profile  $receiver
+     * @return Conversation|Channel|null
+     * It creates conversation if not exists. No membership checks on channel.
+     */
+    public function resolveMessageableForSending(Profile $sender, Profile $receiver): Conversation|Channel|null
+    {
+        if ($receiver->profileable_type === ProfileableTypes::Channel->value) {
+            $messageable = $receiver->profileable;
+        } else {
+            $messageable = ConversationService::getOrCreateBetween($sender, $receiver);
+        }
+
+        return $messageable;
+    }
+
+    /***
+     * @param  Profile  $profile
+     * @param  Profile  $viewerProfile
+     * @return Conversation|Channel|null
+     * Returns null if conversation not exists. also Channel (channel and group type) would checks for membership
+     */
+    public static function resolveMessageableForViewing(Profile $profile, Profile $viewerProfile): Conversation|Channel|null
     {
         if ($profile->profileable_type === ProfileableTypes::User->value) {
             return ConversationService::getBetween($viewerProfile, $profile);
