@@ -74,13 +74,8 @@ class Channel extends Model implements Messageable
         return $this->belongsTo(Message::class, 'last_message_id');
     }
 
-    public function profileRole()
+    public function profileRole(Profile $currentProfile)
     {
-        $currentProfile = request()->currentProfile();
-        if (! $currentProfile) {
-            return null;
-        }
-
         return $this->members()
             ->where('profile_id', $currentProfile->id)
             ->first()?->role;
