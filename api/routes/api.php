@@ -26,7 +26,6 @@ Route::prefix('v1')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('me', [AuthController::class, 'me'])->name('me');
 
-        Route::get('conversations/my', [ConversationController::class, 'my'])->name('conversations.my');
         Route::get('conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
         Route::post('conversations/{conversation}/hide', [ConversationController::class, 'hide'])->name('conversations.hide');
 
