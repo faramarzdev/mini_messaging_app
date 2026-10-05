@@ -33,7 +33,7 @@ class MessagePolicy
             return false;
         }
 
-        if ($message->messageable_type === MessageableType::Conversation->value) {
+        if ($message->messageable_type === MessageableType::Conversation) {
             if (
                 ($message->sender_id === $profileId && $message->is_available_on_sender) ||
                 ($message->is_available_on_receiver && in_array($profileId, $message->messageable->connectedProfilesIds))
@@ -41,10 +41,10 @@ class MessagePolicy
                 return true;
             }
 
-        } elseif ($message->messageable_type === MessageableType::Channel->value) {
+        } elseif ($message->messageable_type === MessageableType::Channel) {
             $channel = Channel::where('id', $message->messageable_id)->first();
             if ($channel) {
-                if ($channel->visibility == ChannelVisibility::Public->value) {
+                if ($channel->visibility == ChannelVisibility::Public) {
                     return true;
                 } elseif (in_array($profileId, $channel->members->pluck('id')->toArray())) {
                     return true;
@@ -62,14 +62,14 @@ class MessagePolicy
             return false;
         }
 
-        if ($profile->profileable_type === ProfileableTypes::User->value) {
+        if ($profile->profileable_type === ProfileableTypes::User) {
             // conversation: user to user
             return true;
 
-        } elseif ($profile->profileable_type === ProfileableTypes::Channel->value) {
+        } elseif ($profile->profileable_type === ProfileableTypes::Channel) {
             // channel (and channel types, including group amd channel)
             $channel = $profile->profileable;
-            if ($channel->visibility == ChannelVisibility::Public->value) {
+            if ($channel->visibility == ChannelVisibility::Public) {
                 return ! $channel->isProfileBlocked($viewerProfile);
             } elseif ($channel->isMember($viewerProfile)) {
                 return true;
@@ -159,7 +159,7 @@ class MessagePolicy
             $profileInChannel = ChannelMember::where('channel_id', $message->messageable_id)->where('profile_id', $profileId)->first();
             if ($profileInChannel) {
                 $userRole = $profileInChannel->role;
-                if (in_array($userRole, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+                if (in_array($userRole, [ChannelRoles::Owner, ChannelRoles::Admin])) {
                     return true;
                 }
             }

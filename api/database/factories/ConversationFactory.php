@@ -25,7 +25,7 @@ class ConversationFactory extends Factory
         } else {
             $user = User::factory()->create();
             // user creation makes the profile
-            $profile = Profile::where('profileable_type', ProfileableTypes::User->value)
+            $profile = Profile::where('profileable_type', ProfileableTypes::User)
                 ->where('profileable_id', $user->id)->first();
             $lowerProfileId = $profile->id;
         }
@@ -34,7 +34,7 @@ class ConversationFactory extends Factory
             $higherProfileId = $this->state['higher_profile_id'];
         } else {
             $higherUser = User::factory()->create();
-            $higherProfile = Profile::where('profileable_type', ProfileableTypes::User->value)
+            $higherProfile = Profile::where('profileable_type', ProfileableTypes::User)
                 ->where('profileable_id', $higherUser->id)->first();
             $higherProfileId = $higherProfile->id;
         }

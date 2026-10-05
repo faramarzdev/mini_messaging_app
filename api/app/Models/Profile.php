@@ -22,6 +22,8 @@ class Profile extends Model
     //  using it for auto-generate the handle (yet it checks name existence)
 
     protected $casts = [
+        'profileable_id' => 'integer',
+        'profileable_type' => ProfileableTypes::class,
         'handle' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -44,7 +46,7 @@ class Profile extends Model
 
     public function isChannel(): bool
     {
-        return $this->profileable_type === ProfileableTypes::Channel->value;
+        return $this->profileable_type === ProfileableTypes::Channel;
     }
 
     public function scopeSearchFor($query, $keyword)

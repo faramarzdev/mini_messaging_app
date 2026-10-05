@@ -34,7 +34,7 @@ class MessageRead implements ShouldBroadcastNow
             ];
         } elseif (
             $this->message->messageable instanceof \App\Models\Channel &&
-            $this->message->messageable->type !== ChannelType::Channel->value
+            $this->message->messageable->type !== ChannelType::Channel
         ) {
             return [
                 new PrivateChannel('channel.'.$this->message->messageable->id),

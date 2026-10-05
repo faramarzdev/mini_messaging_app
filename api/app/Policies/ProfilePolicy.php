@@ -40,11 +40,11 @@ class ProfilePolicy
      */
     public function update(User $user, Profile $profile): bool
     {
-        if ($profile->profileable_type === ProfileableTypes::User->value) {
+        if ($profile->profileable_type === ProfileableTypes::User) {
             if ($profile->profileable_id === $user->id) {
                 return true;
             }
-        } elseif ($profile->profileable_type === ProfileableTypes::Channel->value) {
+        } elseif ($profile->profileable_type === ProfileableTypes::Channel) {
             $channel = Channel::findOrFail($profile->profileable_id);
             if ($channel->owner_id === $user->id) {
                 return true;
@@ -53,7 +53,7 @@ class ProfilePolicy
             $profileInChannel = ChannelMember::where('channel_id', $channel->id)->where('profile_id', $userProfile->id)->first();
             if ($profileInChannel) {
                 $userRole = $profileInChannel->role;
-                if (in_array($userRole, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+                if (in_array($userRole, [ChannelRoles::Owner, ChannelRoles::Admin])) {
                     return true;
                 }
             }

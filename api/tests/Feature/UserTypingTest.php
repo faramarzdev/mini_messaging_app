@@ -80,11 +80,11 @@ class UserTypingTest extends TestCase
         $member = User::factory()->create();
 
         $group = Channel::factory()->create([
-            'type' => ChannelType::Group->value,
+            'type' => ChannelType::Group,
         ]);
         $group->members()->create([
             'profile_id' => $member->profile->id,
-            'status' => ChannelMemberStatus::Approved->value,
+            'status' => ChannelMemberStatus::Approved,
         ]);
 
         $this->actingAs($member, 'sanctum')
@@ -103,7 +103,7 @@ class UserTypingTest extends TestCase
         $user = User::factory()->create();
 
         $group = Channel::factory()->create([
-            'type' => ChannelType::Group->value,
+            'type' => ChannelType::Group,
         ]);
 
         $this->actingAs($user, 'sanctum')
@@ -120,7 +120,7 @@ class UserTypingTest extends TestCase
     {
 
         $group = Channel::factory()->create([
-            'type' => ChannelType::Group->value,
+            'type' => ChannelType::Group,
         ]);
 
         $this->postJson(route('user.typing'), ['channel_id' => $group->id])

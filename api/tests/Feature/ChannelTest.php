@@ -29,8 +29,8 @@ class ChannelTest extends TestCase
     private array $channelToCreate = [
         'name' => 'Test Channel',
         'description' => null,
-        'visibility' => ChannelVisibility::Public->value,
-        'type' => ChannelType::Channel->value,
+        'visibility' => ChannelVisibility::Public,
+        'type' => ChannelType::Channel,
         'can_join_by_link' => 1,
         'confirm_joined' => 0,
     ];
@@ -53,7 +53,7 @@ class ChannelTest extends TestCase
 
         $this->assertDatabaseHas(Profile::class, [
             'profileable_id' => $channel['id'],
-            'profileable_type' => ProfileableTypes::Channel->value,
+            'profileable_type' => ProfileableTypes::Channel,
 
             'handle' => 'test_channel',
 
@@ -81,10 +81,10 @@ class ChannelTest extends TestCase
     {
         [$channel, $owner] = $this->createChannel();
 
-        ChannelMember::factory(10)->state(['channel_id' => $channel->id, 'status' => ChannelMemberStatus::Pending->value])->create();
-        ChannelMember::factory(10)->state(['channel_id' => $channel->id, 'status' => ChannelMemberStatus::Approved->value])->create();
+        ChannelMember::factory(10)->state(['channel_id' => $channel->id, 'status' => ChannelMemberStatus::Pending])->create();
+        ChannelMember::factory(10)->state(['channel_id' => $channel->id, 'status' => ChannelMemberStatus::Approved])->create();
 
-        $route = route('channel_member.index', ['channel' => $channel->id, 'status' => ChannelMemberStatus::Pending->value]);
+        $route = route('channel_member.index', ['channel' => $channel->id, 'status' => ChannelMemberStatus::Pending]);
         $response = $this->actingAs($owner, 'sanctum')->getJson($route);
 
         $response->assertStatus(Response::HTTP_OK);
@@ -127,7 +127,7 @@ class ChannelTest extends TestCase
         $this->assertDatabaseCount(Message::class, 0);
 
         Message::factory(10)->create([
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
 
@@ -199,8 +199,8 @@ class ChannelTest extends TestCase
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $user->profile->id,
-            'role' => ChannelRoles::Member->value,
-            'status' => ChannelMemberStatus::Pending->value,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Pending,
         ]);
     }
 
@@ -212,8 +212,8 @@ class ChannelTest extends TestCase
         $channelMember = [
             'channel_id' => $channel->id,
             'profile_id' => $user->profile->id,
-            'role' => ChannelRoles::Member->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Approved,
         ];
         ChannelMember::factory()->state($channelMember)->create();
         $this->assertDatabaseCount(ChannelMember::class, 1);
@@ -224,7 +224,7 @@ class ChannelTest extends TestCase
                 route('channel_member.leave', ['channel' => $channel->id])
             );
         $response->assertStatus(Response::HTTP_OK);
-        $channelMember['status'] = ChannelMemberStatus::Left->value;
+        $channelMember['status'] = ChannelMemberStatus::Left;
         $this->assertDatabaseCount(ChannelMember::class, 1);
         $this->assertDatabaseHas(ChannelMember::class, $channelMember);
     }
@@ -239,8 +239,8 @@ class ChannelTest extends TestCase
         $channelAdmin = [
             'channel_id' => $channel->id,
             'profile_id' => $admin->profile->id,
-            'role' => ChannelRoles::Admin->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Admin,
+            'status' => ChannelMemberStatus::Approved,
         ];
         ChannelMember::factory()->state($channelAdmin)->create();
         $this->assertDatabaseCount(ChannelMember::class, 3); // 1 owner, 1 member, 1 admin
@@ -259,7 +259,7 @@ class ChannelTest extends TestCase
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $member->profile->id,
-            'status' => ChannelMemberStatus::Blocked->value,
+            'status' => ChannelMemberStatus::Blocked,
         ]);
     }
 
@@ -273,8 +273,8 @@ class ChannelTest extends TestCase
             ChannelMember::factory()->state([
                 'channel_id' => $channel->id,
                 'profile_id' => $member->profile->id,
-                'role' => ChannelRoles::Member->value,
-                'status' => ChannelMemberStatus::Approved->value,
+                'role' => ChannelRoles::Member,
+                'status' => ChannelMemberStatus::Approved,
             ])->create();
         }
         $this->assertDatabaseCount(ChannelMember::class, 2);
@@ -292,8 +292,8 @@ class ChannelTest extends TestCase
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $userB->profile->id,
-            'role' => ChannelRoles::Member->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Approved,
         ]);
     }
 
@@ -307,8 +307,8 @@ class ChannelTest extends TestCase
         $channelAdmin = [
             'channel_id' => $channel->id,
             'profile_id' => $admin->profile->id,
-            'role' => ChannelRoles::Admin->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Admin,
+            'status' => ChannelMemberStatus::Approved,
         ];
         ChannelMember::factory()->state($channelAdmin)->create();
 
@@ -325,7 +325,7 @@ class ChannelTest extends TestCase
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $member->profile->id,
-            'status' => ChannelMemberStatus::Blocked->value,
+            'status' => ChannelMemberStatus::Blocked,
         ]);
     }
 
@@ -339,8 +339,8 @@ class ChannelTest extends TestCase
         ChannelMember::factory()->state([
             'channel_id' => $channel->id,
             'profile_id' => $memberB->profile->id,
-            'role' => ChannelRoles::Member->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Approved,
         ])->create();
         $this->assertDatabaseCount(ChannelMember::class, 3);
 
@@ -357,8 +357,8 @@ class ChannelTest extends TestCase
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $memberB->profile->id,
-            'role' => ChannelRoles::Member->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Approved,
         ]);
     }
 
@@ -370,8 +370,8 @@ class ChannelTest extends TestCase
         $blockedMember = [
             'channel_id' => $channel->id,
             'profile_id' => $user->profile->id,
-            'role' => ChannelRoles::Member->value,
-            'status' => ChannelMemberStatus::Blocked->value,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Blocked,
         ];
         ChannelMember::factory()->state($blockedMember)->create();
         $this->assertDatabaseCount(ChannelMember::class, 2);

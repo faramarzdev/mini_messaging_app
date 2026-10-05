@@ -28,7 +28,7 @@ class ChannelMemberInviteRequest extends FormRequest
             'role' => [
                 'required',
                 'string',
-                Rule::in([ChannelRoles::Admin->value, ChannelRoles::Member->value]),
+                Rule::in([ChannelRoles::Admin, ChannelRoles::Member]),
             ],
         ];
     }

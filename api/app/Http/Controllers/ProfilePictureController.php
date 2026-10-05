@@ -16,13 +16,13 @@ class ProfilePictureController extends Controller
     public function store(Profile $profile, StoreProfilePictureRequest $request, ProfilePictureService $profilePictureService)
     {
         $this->authorize('create', [ProfilePicture::class, $profile]);
-        if ($profile->profileable_type === ProfileableTypes::User->value) {
+        if ($profile->profileable_type === ProfileableTypes::User) {
             if ($profile->pictures()->count() >= config('app.max_profile_picture_per_user')) {
                 return response()->json([
                     'error' => 'user limit for profile picture exceeded!',
                 ], Response::HTTP_NOT_ACCEPTABLE);
             }
-        } elseif ($profile->profileable_type === ProfileableTypes::Channel->value) {
+        } elseif ($profile->profileable_type === ProfileableTypes::Channel) {
             if ($profile->pictures()->count() >= config('app.max_profile_picture_per_channel')) {
                 return response()->json([
                     'error' => 'user limit for profile picture exceeded!',

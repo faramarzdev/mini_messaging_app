@@ -196,12 +196,12 @@ class ChatTest extends TestCase
         // Send two more messages from the other profile
         Message::factory()->create([
             'sender_id' => $other->profile->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'messageable_id' => $conversation->id,
         ]);
         $lastMessage = Message::factory()->create([
             'sender_id' => $other->profile->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'messageable_id' => $conversation->id,
         ]);
         $conversation->update(['last_message_id' => $lastMessage->id]);
@@ -224,19 +224,19 @@ class ChatTest extends TestCase
         [$channel, $owner] = $this->createChannel();
         $firstMessage = Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
 
         // Send two more messages
         Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
         $lastMessage = Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
         $channel->update(['last_message_id' => $lastMessage->id]);
@@ -245,8 +245,8 @@ class ChatTest extends TestCase
         ChannelMember::factory()->create([
             'channel_id' => $channel->id,
             'profile_id' => $this->profile->id,
-            'status' => ChannelMemberStatus::Approved->value,
-            'role' => ChannelRoles::Member->value,
+            'status' => ChannelMemberStatus::Approved,
+            'role' => ChannelRoles::Member,
             'last_read_message_id' => $firstMessage->id,
             'joined_at' => now(),
         ]);
@@ -274,8 +274,8 @@ class ChatTest extends TestCase
         ChannelMember::create([
             'channel_id' => $channel->id,
             'profile_id' => $this->profile->id,
-            'status' => ChannelMemberStatus::Pending->value,
-            'role' => ChannelRoles::Member->value,
+            'status' => ChannelMemberStatus::Pending,
+            'role' => ChannelRoles::Member,
             'joined_at' => now(),
         ]);
 

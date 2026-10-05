@@ -24,7 +24,7 @@ class ChannelMemberFactory extends Factory
             'channel_id' => Channel::factory(),
             'profile_id' => User::factory()->create()->profile->id,
             'last_read_message_id' => null,
-            'role' => ChannelRoles::Member->value,
+            'role' => ChannelRoles::Member,
             'status' => fake()->randomElement(ChannelMemberStatus::cases()),
         ];
     }

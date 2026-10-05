@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ChannelMemberStatus;
+use App\Enums\ChannelRoles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,14 @@ class ChannelMember extends Model
         'role',
         'joined_at',
         'status',
+    ];
+
+    protected $casts = [
+        'channel_id' => 'integer',
+        'profile_id' => 'integer',
+        'role' => ChannelRoles::class,
+        'joined_at' => 'datetime',
+        'status' => ChannelMemberStatus::class,
     ];
 
     public function channel(): BelongsTo

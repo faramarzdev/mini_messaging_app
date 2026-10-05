@@ -32,7 +32,7 @@ class ProfileTest extends TestCase
         $user = User::factory()->create();
         $this->assertDatabaseHas('profiles', [
             'profileable_id' => $user->id,
-            'profileable_type' => ProfileableTypes::User->value,
+            'profileable_type' => ProfileableTypes::User,
         ]);
         $this->assertDatabaseCount(Profile::class, 1);
     }
@@ -45,8 +45,8 @@ class ProfileTest extends TestCase
 
         $channelData = [
             'name' => 'tests',
-            'visibility' => ChannelVisibility::Public->value,
-            'type' => ChannelType::Channel->value,
+            'visibility' => ChannelVisibility::Public,
+            'type' => ChannelType::Channel,
             'can_join_by_link' => 1,
             'confirm_joined' => 0,
         ];
@@ -64,7 +64,7 @@ class ProfileTest extends TestCase
 
         $this->assertDatabaseHas(Profile::class, [
             'profileable_id' => $channel['id'],
-            'profileable_type' => ProfileableTypes::Channel->value,
+            'profileable_type' => ProfileableTypes::Channel,
         ]);
         $this->assertDatabaseCount(Profile::class, 2);
     }

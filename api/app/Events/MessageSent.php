@@ -30,11 +30,11 @@ class MessageSent implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        if ($this->message->messageable_type === MessageableType::Channel->value) {
+        if ($this->message->messageable_type === MessageableType::Channel) {
             return [
                 new PrivateChannel('channel.'.$this->message->messageable_id),
             ];
-        } elseif ($this->message->messageable_type === MessageableType::Conversation->value) {
+        } elseif ($this->message->messageable_type === MessageableType::Conversation) {
             return [
                 new PrivateChannel('conversation.'.$this->message->messageable_id),
             ];

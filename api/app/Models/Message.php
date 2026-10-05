@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MessageableType;
 use App\Enums\MessageType;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +35,7 @@ class Message extends Model
         'is_available_on_sender' => 'boolean',
         'is_available_on_receiver' => 'boolean',
         'type' => MessageType::class,
+        'messageable_type' => MessageableType::class,
     ];
 
     public function sender(): BelongsTo

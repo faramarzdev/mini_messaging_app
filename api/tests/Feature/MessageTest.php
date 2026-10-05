@@ -364,7 +364,7 @@ class MessageTest extends TestCase
 
         $this->assertDatabaseMissing(Message::class, [
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'body' => '',
         ]);
         $this->assertDatabaseEmpty(Message::class);
@@ -420,13 +420,13 @@ class MessageTest extends TestCase
         Message::factory(10)->state([
             'sender_id' => $this->user->profile->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
         ])->create();
         // and 10 messages as receiver
         Message::factory(10)->state([
             'sender_id' => $receiver->profile->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
         ])->create();
 
         // 20 messages for others
@@ -522,7 +522,7 @@ class MessageTest extends TestCase
         ChannelMember::factory()->state([
             'channel_id' => $channel->id,
             'profile_id' => $pendingMember->profile->id,
-            'status' => ChannelMemberStatus::Pending->value,
+            'status' => ChannelMemberStatus::Pending,
         ])->create();
 
         $response = $this->actingAs($pendingMember, 'sanctum')
@@ -619,25 +619,25 @@ class MessageTest extends TestCase
         Message::factory(10)->state([
             'sender_id' => $profileA->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
         ])->create();
 
         Message::factory(10)->state([
             'sender_id' => $profileB->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
         ])->create();
 
         Message::factory(1)->state([
             'sender_id' => $profileA->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'body' => 'should be fetched as includes searchedKeyword, send by lower',
         ])->create();
         Message::factory(1)->state([
             'sender_id' => $profileB->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'body' => 'should be fetched as includes searchedKeyword, send by higher',
         ])->create();
 
@@ -868,7 +868,7 @@ class MessageTest extends TestCase
             'id' => $message->id,
             'sender_id' => $this->user->profile->id,
             'is_available_on_sender' => true,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'is_available_on_receiver' => true,
         ]);
 
@@ -879,7 +879,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'id' => $message->id,
             'is_available_on_sender' => true,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'is_available_on_receiver' => false,
         ]);
         $this->assertDatabaseCount(Message::class, 1);
@@ -915,7 +915,7 @@ class MessageTest extends TestCase
         $this->assertDatabaseHas(Message::class, [
             'id' => $message->id,
             'is_available_on_sender' => false,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'is_available_on_receiver' => false,
         ]);
         $this->assertDatabaseCount(Message::class, 1);
@@ -1043,7 +1043,7 @@ class MessageTest extends TestCase
         [$channel] = $this->createChannel(member: $this->user);
 
         $message = Message::factory()->create([
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
 
@@ -1146,7 +1146,7 @@ class MessageTest extends TestCase
         Message::factory($totalCount + $extraMessages)->state([
             'sender_id' => $lowerUser->profile->id,
             'messageable_id' => $conversation->id,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
         ])->create();
 
         // request with no anchor must newest messages (page) with has_more_before=true
@@ -1223,12 +1223,12 @@ class MessageTest extends TestCase
         ChannelMember::factory()->state([
             'channel_id' => $group->id,
             'profile_id' => $this->user->profile->id,
-            'status' => ChannelMemberStatus::Blocked->value,
+            'status' => ChannelMemberStatus::Blocked,
         ])->create();
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $group->id,
             'profile_id' => $this->user->profile->id,
-            'status' => ChannelMemberStatus::Blocked->value,
+            'status' => ChannelMemberStatus::Blocked,
         ]);
 
         $this->assertDatabaseCount(Message::class, 0);
@@ -1247,7 +1247,7 @@ class MessageTest extends TestCase
         [$group, $owner] = $this->createChannel(channelType: ChannelType::Group);
         Message::factory(2)->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $group->id,
         ]);
 
@@ -1264,7 +1264,7 @@ class MessageTest extends TestCase
         [$group, $owner] = $this->createChannel(channelType: ChannelType::Group);
         Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $group->id,
         ]);
 
@@ -1272,7 +1272,7 @@ class MessageTest extends TestCase
         ChannelMember::factory()->create([
             'channel_id' => $group->id,
             'profile_id' => $blockedUser->profile->id,
-            'status' => ChannelMemberStatus::Blocked->value,
+            'status' => ChannelMemberStatus::Blocked,
         ]);
 
         $this->actingAs($blockedUser, 'sanctum')

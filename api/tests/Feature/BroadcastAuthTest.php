@@ -57,7 +57,7 @@ class BroadcastAuthTest extends TestCase
         ChannelMember::factory()->create([
             'channel_id' => $channel->id,
             'profile_id' => $member->profile?->id,
-            'status' => ChannelMemberStatus::Approved->value,
+            'status' => ChannelMemberStatus::Approved,
         ]);
 
         $response = $this->actingAs($member, 'sanctum')
@@ -87,7 +87,7 @@ class BroadcastAuthTest extends TestCase
     #[Test]
     public function non_member_cannot_subscribe_to_public_group_broadcast(): void
     {
-        $group = Channel::factory()->create(['type' => ChannelType::Group->value]);
+        $group = Channel::factory()->create(['type' => ChannelType::Group]);
         $user = User::factory()->create();
 
         $this->actingAs($user, 'sanctum')

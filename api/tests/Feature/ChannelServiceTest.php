@@ -32,14 +32,14 @@ class ChannelServiceTest extends TestCase
         $channel = app(ChannelService::class)->createChannel([
             'name' => 'Test Channel',
             'description' => null,
-            'visibility' => ChannelVisibility::Public->value,
-            'type' => ChannelType::Channel->value,
+            'visibility' => ChannelVisibility::Public,
+            'type' => ChannelType::Channel,
             'can_join_by_link' => 1,
             'confirm_joined' => 0,
             'handle' => 'test_channel',
 
             // trying to inject unwanted data
-            'role' => ChannelRoles::Admin->value,
+            'role' => ChannelRoles::Admin,
             'messages_count' => 10,
             'last_message_id' => 5,
             'last_activity_at' => $injectingTime,
@@ -55,14 +55,14 @@ class ChannelServiceTest extends TestCase
         ]);
         $this->assertDatabaseHas(Profile::class, [
             'profileable_id' => $channel->id,
-            'profileable_type' => ProfileableTypes::Channel->value,
+            'profileable_type' => ProfileableTypes::Channel,
             'handle' => 'test_channel',
         ]);
         $this->assertDatabaseHas(ChannelMember::class, [
             'channel_id' => $channel->id,
             'profile_id' => $channelOwner->profile->id,
-            'role' => ChannelRoles::Owner->value,
-            'status' => ChannelMemberStatus::Approved->value,
+            'role' => ChannelRoles::Owner,
+            'status' => ChannelMemberStatus::Approved,
         ]);
         $this->assertDatabaseMissing(ChannelMember::class, [
             'channel_id' => $channel->id,
