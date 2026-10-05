@@ -57,17 +57,21 @@ class MessagePolicy
 
     public function viewMessages(User $user, Profile $profile): bool
     {
-        $viewerProfileId = $user->profile?->id;
-        if (! $viewerProfileId) {
+        $viewerProfile = $user->profile;
+        if (! $viewerProfile) {
             return false;
         }
 
         if ($profile->profileable_type === ProfileableTypes::User->value) {
-            return true; // user can
+            // conversation: user to user
+            return true;
+
         } elseif ($profile->profileable_type === ProfileableTypes::Channel->value) {
-            if ($profile->profileable->visibility == ChannelVisibility::Public->value) {
-                return true;
-            } elseif ($profile->profileable->profileRole()) {
+            // channel (and channel types, including group amd channel)
+            $channel = $profile->profileable;
+            if ($channel->visibility == ChannelVisibility::Public->value) {
+                return ! $channel->isProfileBlocked($viewerProfile);
+            } elseif ($channel->isMember($viewerProfile)) {
                 return true;
             }
         }

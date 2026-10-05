@@ -1240,4 +1240,43 @@ class MessageTest extends TestCase
         $response->assertStatus(Response::HTTP_FORBIDDEN);
         $this->assertDatabaseCount(Message::class, 0);
     }
+
+    #[Test]
+    public function non_member_can_fetch_public_group_messages(): void
+    {
+        [$group, $owner] = $this->createChannel(channelType: ChannelType::Group);
+        Message::factory(2)->create([
+            'sender_id' => $owner->profile->id,
+            'messageable_type' => MessageableType::Channel->value,
+            'messageable_id' => $group->id,
+        ]);
+
+        $viewer = User::factory()->create();
+        $response = $this->actingAs($viewer, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $group->profile->handle]));
+        $response->assertStatus(Response::HTTP_OK);
+        $response->assertJsonCount(2, 'data');
+    }
+
+    #[Test]
+    public function blocked_user_cannot_fetch_public_group_messages(): void
+    {
+        [$group, $owner] = $this->createChannel(channelType: ChannelType::Group);
+        Message::factory()->create([
+            'sender_id' => $owner->profile->id,
+            'messageable_type' => MessageableType::Channel->value,
+            'messageable_id' => $group->id,
+        ]);
+
+        $blockedUser = User::factory()->create();
+        ChannelMember::factory()->create([
+            'channel_id' => $group->id,
+            'profile_id' => $blockedUser->profile->id,
+            'status' => ChannelMemberStatus::Blocked->value,
+        ]);
+
+        $this->actingAs($blockedUser, 'sanctum')
+            ->getJson(route('profile.messages.index', ['profile' => $group->profile->handle]))
+            ->assertStatus(Response::HTTP_FORBIDDEN);
+    }
 }

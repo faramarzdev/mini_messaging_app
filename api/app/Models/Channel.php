@@ -84,6 +84,19 @@ class Channel extends Model implements Messageable
             ->first()?->role;
     }
 
+    public function isProfileBlocked(Profile $profile): bool
+    {
+        return $this->allMembers()
+            ->where('profile_id', $profile->id)
+            ->whereIn('status', [ChannelMemberStatus::Blocked->value, ChannelMemberStatus::Rejected->value])
+            ->exists();
+    }
+
+    public function isMember(Profile $profile): bool
+    {
+        return $this->members()->where('profile_id', $profile->id)->exists();
+    }
+
     public static function create(array $attributes = [])
     {
         throw new \RuntimeException(
@@ -98,10 +111,7 @@ class Channel extends Model implements Messageable
 
             if ($this->visibility === ChannelVisibility::Public->value) {
                 // anyone can message public group unless got blocked
-                return ! $this->allMembers()
-                    ->where('profile_id', $sender->id)
-                    ->where('status', ChannelMemberStatus::Blocked->value)
-                    ->exists();
+                return ! $this->isProfileBlocked($sender);
             }
 
             return $this->members()

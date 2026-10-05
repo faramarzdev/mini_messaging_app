@@ -111,16 +111,13 @@ class MessageService
      */
     public static function resolveMessageableForViewing(Profile $profile, Profile $viewerProfile): Conversation|Channel|null
     {
+        // just resolving the messageable, authorization is already checked at MessagePolicy::viewMessages
         if ($profile->profileable_type === ProfileableTypes::User->value) {
             return ConversationService::getBetween($viewerProfile, $profile);
         }
 
         if ($profile->profileable_type === ProfileableTypes::Channel->value) {
-            $isMember = ChannelMember::where('channel_id', $profile->profileable_id)
-                ->where('profile_id', $viewerProfile->id)
-                ->exists();
-
-            return $isMember ? $profile->profileable : null;
+            return $profile->profileable;
         }
 
         return null;
