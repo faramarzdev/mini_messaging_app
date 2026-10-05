@@ -58,7 +58,7 @@ class ChannelMemberController extends Controller
 
     public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse
     {
-        $role = $channel->profileRole;
+        $role = $channel->profileRole($request->currentProfile());
         if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
         }
@@ -95,7 +95,7 @@ class ChannelMemberController extends Controller
 
     public function kick(Request $request, Channel $channel)
     {
-        $role = $channel->profileRole();
+        $role = $channel->profileRole($request->currentProfile());
         if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
         }
@@ -119,7 +119,7 @@ class ChannelMemberController extends Controller
 
     public function block(Request $request, Channel $channel)
     {
-        $role = $channel->profileRole();
+        $role = $channel->profileRole($request->currentProfile());
         if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
         }
