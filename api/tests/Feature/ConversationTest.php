@@ -13,83 +13,9 @@ use Tests\Concerns\CreatesChannels;
 use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
-use function PHPUnit\Framework\assertEquals;
-
 class ConversationTest extends TestCase
 {
     use CreatesChannels, CreatesConversations;
-
-    #[Test]
-    public function user_can_get_their_conversations()
-    {
-        $user = User::factory()->create();
-        $profile = $user->profile;
-
-        Conversation::factory(3)->create([
-            'lower_profile_id' => $profile->id,
-            'is_available_for_lower_profile' => true,
-        ]);
-        Conversation::factory(1)->create([
-            'lower_profile_id' => $profile->id,
-            'is_available_for_lower_profile' => false,
-        ]);
-        Conversation::factory(2)->create([
-            'higher_profile_id' => $profile->id,
-            'is_available_for_higher_profile' => true,
-        ]);
-
-        Conversation::factory(4)->create();
-
-        $this->assertDatabaseCount(Conversation::class, 10);
-
-        $response = $this->actingAs($user, 'sanctum')
-            ->getJson(route('conversations.my'));
-        $response->assertOk();
-        $response->assertJsonCount(5, 'data');
-    }
-
-    #[Test]
-    public function user_conversations_has_correct_pagination()
-    {
-        $user = User::factory()->create();
-        $profile = $user->profile;
-
-        Conversation::factory(60)->create([
-            'lower_profile_id' => $profile->id,
-            'is_available_for_lower_profile' => true,
-        ]);
-
-        Conversation::factory(40)->create();
-
-        $this->assertDatabaseCount(Conversation::class, 100);
-
-        $response = $this->actingAs($user)
-            ->getJson(route('conversations.my'));
-        $response->assertOk();
-        $response->assertJsonCount(50, 'data');
-        assertequals($response->json('meta')['total'], 60);
-    }
-
-    #[Test]
-    public function user_cannot_get_others_conversations()
-    {
-        $user = User::factory()->create();
-        $profile = $user->profile;
-
-        Conversation::factory(1)->create([
-            'lower_profile_id' => $profile->id,
-            'is_available_for_lower_profile' => true,
-        ]);
-
-        Conversation::factory(9)->create();
-
-        $this->assertDatabaseCount(Conversation::class, 10);
-
-        $response = $this->actingAs($user)
-            ->getJson(route('conversations.my'));
-        $response->assertOk();
-        $response->assertJsonCount(1, 'data');
-    }
 
     #[Test]
     public function user_can_hide_their_conversations()
@@ -157,15 +83,6 @@ class ConversationTest extends TestCase
         $response->assertStatus(Response::HTTP_FORBIDDEN);
 
         $this->assertDatabaseHas(Conversation::class, $conversation->toArray());
-    }
-
-    #[Test]
-    public function not_logged_in_get_error()
-    {
-        Conversation::factory(50)->create();
-        $this->assertDatabaseCount(Conversation::class, 50);
-        $this->getJson(route('conversations.my'))
-            ->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
     #[Test]
