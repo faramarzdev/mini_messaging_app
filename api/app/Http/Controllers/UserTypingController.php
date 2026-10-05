@@ -41,7 +41,7 @@ class UserTypingController extends Controller
             }
         } else {
             $channel = Channel::find($request->channel_id);
-            if ($channel?->type !== ChannelType::Channel->value) {
+            if ($channel?->type !== ChannelType::Channel) {
                 $isMember = ChannelMember::where('channel_id', $request->channel_id)->where('profile_id', $writer->id)->first();
                 if ($isMember) {
                     $messageable = $channel;

@@ -51,7 +51,7 @@ class ChannelService
             $profileToCreate = [
                 ...$profileData,
                 'profileable_id' => $channel->id,
-                'profileable_type' => ProfileableTypes::Channel->value,
+                'profileable_type' => ProfileableTypes::Channel,
             ];
 
             Profile::create($profileToCreate);
@@ -59,8 +59,8 @@ class ChannelService
             ChannelMember::create([
                 'channel_id' => $channel->id,
                 'profile_id' => $owner->profile->id,
-                'role' => ChannelRoles::Owner->value,
-                'status' => ChannelMemberStatus::Approved->value,
+                'role' => ChannelRoles::Owner,
+                'status' => ChannelMemberStatus::Approved,
             ]);
 
             return $channel;
@@ -82,12 +82,12 @@ class ChannelService
             //            $conversations_ids = $conversations->pluck('id')->toArray();
             //            Message::whereIn('conversation_id', $conversations_ids)->delete();
             //            $conversations->delete();
-            Message::where('messageable_type', MessageableType::Channel->value)
+            Message::where('messageable_type', MessageableType::Channel)
                 ->where('messageable_id', $channel->id)
                 ->delete();
 
             // delete the associated Profile
-            Profile::where('profileable_id', $channel->id)->where('profileable_type', ProfileableTypes::Channel->value)->delete();
+            Profile::where('profileable_id', $channel->id)->where('profileable_type', ProfileableTypes::Channel)->delete();
 
             // delete the associated Profile
             return $channel->delete();

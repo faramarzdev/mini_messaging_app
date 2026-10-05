@@ -26,7 +26,7 @@ class MessageFactory extends Factory
             $sender_id = $this->state['sender_id'];
         } else {
             $user = User::factory()->create();
-            $sender = Profile::where('profileable_type', ProfileableTypes::User->value)
+            $sender = Profile::where('profileable_type', ProfileableTypes::User)
                 ->where('profileable_id', $user->id)->first();
             $sender_id = $sender->id;
         }
@@ -35,7 +35,7 @@ class MessageFactory extends Factory
             $receiver_handle = $this->state['receiver_handle'];
         } else {
             $user = User::factory()->create();
-            $receiver = Profile::where('profileable_type', ProfileableTypes::User->value)
+            $receiver = Profile::where('profileable_type', ProfileableTypes::User)
                 ->where('profileable_id', $user->id)->first();
             $receiver_handle = $receiver->id;
         }
@@ -52,7 +52,7 @@ class MessageFactory extends Factory
             'body' => fake()->paragraph(),
             'type' => MessageType::Text->value,
             'is_read' => false,
-            'messageable_type' => MessageableType::Conversation->value,
+            'messageable_type' => MessageableType::Conversation,
             'messageable_id' => Conversation::factory()->state([
                 'lower_profile_id' => $lowerId,
                 'higher_profile_id' => $higherId,

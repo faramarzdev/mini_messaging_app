@@ -34,7 +34,7 @@ trait CreatesConversations
         if ($makeMessage) {
             $message = Message::factory()->create([
                 'sender_id' => $lowerUser->profile->id,
-                'messageable_type' => MessageableType::Conversation->value,
+                'messageable_type' => MessageableType::Conversation,
                 'messageable_id' => $conversation->id,
             ]);
             $conversation->update([

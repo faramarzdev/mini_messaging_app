@@ -24,14 +24,14 @@ class MessageService
     public static function hideAllMessagesForProfileConversation(Conversation $conversation, Profile $profile): void
     {
 
-        $messagesAsSender = Message::where('messageable_type', MessageableType::Conversation->value)
+        $messagesAsSender = Message::where('messageable_type', MessageableType::Conversation)
             ->where('messageable_id', $conversation->id)
             ->where('sender_id', $profile->id);
         $messagesAsSender->update([
             'is_available_on_sender' => false,
         ]);
 
-        $messagesAsReceiver = Message::where('messageable_type', MessageableType::Conversation->value)
+        $messagesAsReceiver = Message::where('messageable_type', MessageableType::Conversation)
             ->where('messageable_id', $conversation->id)
             ->where('sender_id', '!=', $profile->id);
         $messagesAsReceiver->update([
@@ -94,7 +94,7 @@ class MessageService
      */
     public function resolveMessageableForSending(Profile $sender, Profile $receiver): Conversation|Channel|null
     {
-        if ($receiver->profileable_type === ProfileableTypes::Channel->value) {
+        if ($receiver->profileable_type === ProfileableTypes::Channel) {
             $messageable = $receiver->profileable;
         } else {
             $messageable = ConversationService::getOrCreateBetween($sender, $receiver);
@@ -112,11 +112,11 @@ class MessageService
     public static function resolveMessageableForViewing(Profile $profile, Profile $viewerProfile): Conversation|Channel|null
     {
         // just resolving the messageable, authorization is already checked at MessagePolicy::viewMessages
-        if ($profile->profileable_type === ProfileableTypes::User->value) {
+        if ($profile->profileable_type === ProfileableTypes::User) {
             return ConversationService::getBetween($viewerProfile, $profile);
         }
 
-        if ($profile->profileable_type === ProfileableTypes::Channel->value) {
+        if ($profile->profileable_type === ProfileableTypes::Channel) {
             return $profile->profileable;
         }
 

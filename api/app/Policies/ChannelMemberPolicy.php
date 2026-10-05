@@ -14,7 +14,7 @@ class ChannelMemberPolicy
     public function view(User $user, Channel $channel): bool
     {
         $role = $channel->profileRole();
-        if (in_array($role, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+        if (in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return true;
         }
 

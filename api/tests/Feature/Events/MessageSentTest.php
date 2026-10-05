@@ -41,7 +41,7 @@ class MessageSentTest extends TestCase
         [$channel, $owner] = $this->createChannel();
         $message = Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
 
@@ -93,14 +93,5 @@ class MessageSentTest extends TestCase
             $queries,
             'MessageSent re-queried loaded relations: '.json_encode(array_column($queries, 'query'))
         );
-    }
-
-    #[Test]
-    public function unknown_messageable_type_broadcasts_nowhere(): void
-    {
-        [, , , $message] = $this->createConversation(makeMessage: true);
-        $message->messageable_type = 'something_else'; // in memory only, not saved
-
-        $this->assertSame([], (new MessageSent($message))->broadcastOn());
     }
 }

@@ -38,6 +38,8 @@ class Channel extends Model implements Messageable
         'confirm_joined' => 'boolean',
         'messages_count' => 'integer',
         'last_activity_at' => 'datetime',
+        'type' => ChannelType::class,
+        'visibility' => ChannelVisibility::class,
     ];
 
     public function owner(): BelongsTo
@@ -53,7 +55,7 @@ class Channel extends Model implements Messageable
     public function members(): HasMany
     {
         return $this->hasMany(ChannelMember::class, 'channel_id')
-            ->whereIn('status', [ChannelMemberStatus::Approved->value, ChannelMemberStatus::Invited->value]);
+            ->whereIn('status', [ChannelMemberStatus::Approved, ChannelMemberStatus::Invited]);
     }
 
     public function allMembers(): HasMany
@@ -64,7 +66,7 @@ class Channel extends Model implements Messageable
     public function pendingMembers(): HasMany
     {
         return $this->hasMany(ChannelMember::class, 'channel_id')
-            ->whereIn('status', [ChannelMemberStatus::Pending->value]);
+            ->whereIn('status', [ChannelMemberStatus::Pending]);
     }
 
     public function lastMessage(): BelongsTo
@@ -88,7 +90,7 @@ class Channel extends Model implements Messageable
     {
         return $this->allMembers()
             ->where('profile_id', $profile->id)
-            ->whereIn('status', [ChannelMemberStatus::Blocked->value, ChannelMemberStatus::Rejected->value])
+            ->whereIn('status', [ChannelMemberStatus::Blocked, ChannelMemberStatus::Rejected])
             ->exists();
     }
 
@@ -106,10 +108,10 @@ class Channel extends Model implements Messageable
 
     public function canReceiveMessageFrom(Profile $sender): bool
     {
-        if ($this->type === ChannelType::Group->value) {
+        if ($this->type === ChannelType::Group) {
             // todo: settings for group to limit post per sender per minutes to avoid spamming/floading
 
-            if ($this->visibility === ChannelVisibility::Public->value) {
+            if ($this->visibility === ChannelVisibility::Public) {
                 // anyone can message public group unless got blocked
                 return ! $this->isProfileBlocked($sender);
             }
@@ -122,7 +124,7 @@ class Channel extends Model implements Messageable
 
         return $this->members()
             ->where('profile_id', $sender->id)
-            ->whereIn('role', [ChannelRoles::Admin->value, ChannelRoles::Owner->value])
+            ->whereIn('role', [ChannelRoles::Admin, ChannelRoles::Owner])
             ->exists();
     }
 }

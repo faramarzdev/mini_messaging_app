@@ -35,18 +35,18 @@ class ChannelMemberController extends Controller
 
         $profile = $request->currentProfile();
         if ($channel->confirm_joined) {
-            $status = ChannelMemberStatus::Pending->value;
+            $status = ChannelMemberStatus::Pending;
         } else {
-            if ($channel->visibility === ChannelVisibility::Public->value) {
-                $status = ChannelMemberStatus::Approved->value;
+            if ($channel->visibility === ChannelVisibility::Public) {
+                $status = ChannelMemberStatus::Approved;
             } else {
-                $status = ChannelMemberStatus::Pending->value;
+                $status = ChannelMemberStatus::Pending;
             }
         }
         if ($status) {
             $channel->members()->create([
                 'profile_id' => $profile->id,
-                'role' => ChannelRoles::Member->value,
+                'role' => ChannelRoles::Member,
                 'status' => $status,
             ]);
 
@@ -59,14 +59,14 @@ class ChannelMemberController extends Controller
     public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse
     {
         $role = $channel->profileRole;
-        if (! $role || ! in_array($role, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+        if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
         }
         $validated = $request->validated();
         $channel->members()->create([
             'profile_id' => $validated['profile_id'],
             'role' => $validated['role'],
-            'status' => ChannelMemberStatus::Approved->value,
+            'status' => ChannelMemberStatus::Approved,
         ]);
 
         return response()->json([], Response::HTTP_OK);
@@ -80,14 +80,14 @@ class ChannelMemberController extends Controller
             return response()->json(['message' => 'User is not a member!'], Response::HTTP_FORBIDDEN);
         }
         $inChannel = $inChannel->first();
-        if ($inChannel->status === ChannelMemberStatus::Left->value) {
+        if ($inChannel->status === ChannelMemberStatus::Left) {
             return response()->json(['message' => 'Already left!'], Response::HTTP_NOT_ACCEPTABLE);
         }
-        if ($inChannel->role === ChannelRoles::Owner->value) {
+        if ($inChannel->role === ChannelRoles::Owner) {
             return response()->json(['message' => 'Owner can not leave their channel, transfer the ownership or destroy the channel!'], Response::HTTP_FORBIDDEN);
         }
-        $inChannel->status = ChannelMemberStatus::Left->value;
-        $inChannel->role = ChannelRoles::Member->value;
+        $inChannel->status = ChannelMemberStatus::Left;
+        $inChannel->role = ChannelRoles::Member;
         $inChannel->save();
 
         return response()->json([], Response::HTTP_OK);
@@ -96,7 +96,7 @@ class ChannelMemberController extends Controller
     public function kick(Request $request, Channel $channel)
     {
         $role = $channel->profileRole();
-        if (! $role || ! in_array($role, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+        if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
         }
         $validated = $request->validate([
@@ -107,11 +107,11 @@ class ChannelMemberController extends Controller
             return response()->json(['message' => 'User is not a member!'], Response::HTTP_FORBIDDEN);
         }
         $inChannel = $inChannel->first();
-        if ($inChannel->role === ChannelRoles::Owner->value) {
+        if ($inChannel->role === ChannelRoles::Owner) {
             return response()->json(['message' => 'Cannot kick the owner!'], Response::HTTP_FORBIDDEN);
         }
-        $inChannel->status = ChannelMemberStatus::Blocked->value;
-        $inChannel->role = ChannelRoles::Member->value;
+        $inChannel->status = ChannelMemberStatus::Blocked;
+        $inChannel->role = ChannelRoles::Member;
         $inChannel->save();
 
         return response()->json([], Response::HTTP_OK);
@@ -120,7 +120,7 @@ class ChannelMemberController extends Controller
     public function block(Request $request, Channel $channel)
     {
         $role = $channel->profileRole();
-        if (! $role || ! in_array($role, [ChannelRoles::Owner->value, ChannelRoles::Admin->value])) {
+        if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
             return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
         }
         $validated = $request->validate([
@@ -131,11 +131,11 @@ class ChannelMemberController extends Controller
             return response()->json(['message' => 'User is not a member!'], Response::HTTP_FORBIDDEN);
         }
         $inChannel = $inChannel->first();
-        if ($inChannel->role === ChannelRoles::Owner->value) {
+        if ($inChannel->role === ChannelRoles::Owner) {
             return response()->json(['message' => 'Cannot block the owner!'], Response::HTTP_FORBIDDEN);
         }
-        $inChannel->status = ChannelMemberStatus::Blocked->value;
-        $inChannel->role = ChannelRoles::Member->value;
+        $inChannel->status = ChannelMemberStatus::Blocked;
+        $inChannel->role = ChannelRoles::Member;
         $inChannel->save();
 
         return response()->json([], Response::HTTP_OK);

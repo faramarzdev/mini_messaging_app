@@ -43,7 +43,7 @@ class MessageReadTest extends TestCase
         [$group, $owner] = $this->createChannel(channelType: ChannelType::Group);
         $message = Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $group->id,
         ]);
 
@@ -59,7 +59,7 @@ class MessageReadTest extends TestCase
         [$channel, $owner] = $this->createChannel(); // default type: channel
         $message = Message::factory()->create([
             'sender_id' => $owner->profile->id,
-            'messageable_type' => MessageableType::Channel->value,
+            'messageable_type' => MessageableType::Channel,
             'messageable_id' => $channel->id,
         ]);
 

@@ -40,8 +40,8 @@ trait CreatesChannels
             ChannelMember::factory()->create([
                 'channel_id' => $channel->id,
                 'profile_id' => $member->profile->id,
-                'status' => ChannelMemberStatus::Approved->value,
-                'role' => ChannelRoles::Member->value,
+                'status' => ChannelMemberStatus::Approved,
+                'role' => ChannelRoles::Member,
                 'joined_at' => now(),
             ]);
         }

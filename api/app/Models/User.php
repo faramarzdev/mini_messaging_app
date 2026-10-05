@@ -78,7 +78,7 @@ class User extends Authenticatable
         static::created(function ($user) {
             Profile::create([
                 'profileable_id' => $user->id,
-                'profileable_type' => ProfileableTypes::User->value,
+                'profileable_type' => ProfileableTypes::User,
             ]);
         });
     }

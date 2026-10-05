@@ -25,9 +25,9 @@ return new class extends Migration
 
             $table->foreignIdFor(Message::class, 'last_read_message_id')->nullable()->default(null)->constrained()->nullOnDelete();
 
-            $table->enum('role', ChannelRoles::cases())->default(ChannelRoles::Member->value);
+            $table->enum('role', ChannelRoles::cases())->default(ChannelRoles::Member);
 
-            $table->enum('status', ChannelMemberStatus::cases())->default(ChannelMemberStatus::Pending->value);
+            $table->enum('status', ChannelMemberStatus::cases())->default(ChannelMemberStatus::Pending);
 
             $table->timestamp('joined_at')->useCurrent();
 

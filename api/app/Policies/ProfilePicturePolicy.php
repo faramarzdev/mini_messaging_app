@@ -26,11 +26,11 @@ class ProfilePicturePolicy
 
     private function canManageProfile(User $user, Profile $profile): bool
     {
-        if ($profile->profileable_type === ProfileableTypes::User->value) {
+        if ($profile->profileable_type === ProfileableTypes::User) {
             return $profile->profileable_id === $user->id;
         }
 
-        if ($profile->profileable_type === ProfileableTypes::Channel->value) {
+        if ($profile->profileable_type === ProfileableTypes::Channel) {
             $channel = Channel::findOrFail($profile->profileable_id);
             if ($channel->owner_id === $user->id) {
                 return true;
@@ -39,7 +39,7 @@ class ProfilePicturePolicy
                 ->where('profile_id', $user->profile->id)
                 ->first();
 
-            return $membership && in_array($membership->role, [ChannelRoles::Owner->value, ChannelRoles::Admin->value]);
+            return $membership && in_array($membership->role, [ChannelRoles::Owner, ChannelRoles::Admin]);
         }
 
         return false;

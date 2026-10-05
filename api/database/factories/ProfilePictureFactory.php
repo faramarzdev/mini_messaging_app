@@ -25,7 +25,7 @@ class ProfilePictureFactory extends Factory
             $profileId = $this->state['profile_id'];
         } else {
             $user = User::factory()->create();
-            $profile = Profile::where('profileable_type', ProfileableTypes::User->value)
+            $profile = Profile::where('profileable_type', ProfileableTypes::User)
                 ->where('profileable_id', $user->id)->first();
             $profileId = $profile->id;
         }
