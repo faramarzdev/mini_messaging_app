@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ChannelMemberStatus;
+use App\Enums\ChannelType;
 use App\Models\Channel;
 use App\Models\ChannelMember;
 use App\Models\Conversation;
@@ -14,7 +15,7 @@ use Tests\TestCase;
 class BroadcastAuthTest extends TestCase
 {
     #[Test]
-    public function conversation_participant_can_subscribe_to_their_conversation_channel()
+    public function conversation_participant_can_subscribe_to_their_conversation_channel(): void
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
@@ -34,7 +35,7 @@ class BroadcastAuthTest extends TestCase
     }
 
     #[Test]
-    public function non_participant_cannot_subscribe_to_a_conversation_channel()
+    public function non_participant_cannot_subscribe_to_a_conversation_channel(): void
     {
         $impersonator = User::factory()->create();
         $conversation = Conversation::factory()->create();
@@ -49,7 +50,7 @@ class BroadcastAuthTest extends TestCase
     }
 
     #[Test]
-    public function approved_channel_member_can_subscribe_to_channel_broadcast()
+    public function approved_channel_member_can_subscribe_to_channel_broadcast(): void
     {
         $member = User::factory()->create();
         $channel = Channel::factory()->create();
@@ -69,7 +70,7 @@ class BroadcastAuthTest extends TestCase
     }
 
     #[Test]
-    public function non_member_cannot_subscribe_to_channel_broadcast()
+    public function non_member_cannot_subscribe_to_channel_broadcast(): void
     {
         $user = User::factory()->create();
         $channel = Channel::factory()->create();
@@ -81,5 +82,19 @@ class BroadcastAuthTest extends TestCase
             ]);
 
         $response->assertStatus(Response::HTTP_FORBIDDEN);
+    }
+
+    #[Test]
+    public function non_member_cannot_subscribe_to_public_group_broadcast(): void
+    {
+        $group = Channel::factory()->create(['type' => ChannelType::Group->value]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/broadcasting/auth', [
+                'channel_name' => 'private-channel.'.$group->id,
+                'socket_id' => '123456.654321',
+            ])
+            ->assertStatus(Response::HTTP_FORBIDDEN);
     }
 }
