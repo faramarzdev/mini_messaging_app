@@ -11,12 +11,13 @@ use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesChannels;
 use Tests\Concerns\CreatesConversations;
 use Tests\TestCase;
 
 class UserTypingTest extends TestCase
 {
-    use CreatesConversations;
+    use CreatesConversations, CreatesChannels;
 
     protected function setUp(): void
     {
@@ -143,5 +144,19 @@ class UserTypingTest extends TestCase
         Event::assertDispatched(UserTyping::class, function (UserTyping $event) {
             return $event->typer->relationLoaded('profileable');
         });
+    }
+
+
+    #[Test]
+    public function members_cannot_trigger_typing_on_broadcast_channels(): void
+    {
+        $member = User::factory()->create();
+        [$channel] = $this->createChannel(member: $member); // default type: Channel (broadcast)
+
+        $this->actingAs($member, 'sanctum')
+            ->postJson(route('user.typing'), ['channel_id' => $channel->id])
+            ->assertStatus(Response::HTTP_FORBIDDEN);
+
+        Event::assertNotDispatched(UserTyping::class);
     }
 }
