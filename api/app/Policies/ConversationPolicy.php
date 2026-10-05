@@ -16,22 +16,6 @@ class ConversationPolicy
     }
 
     /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Conversation $conversation): bool
-    {
-        $profileId = $user->profile->id;
-        if (
-            ($conversation->lower_profile_id === $profileId && $conversation->is_available_for_lower_profile) ||
-            ($conversation->higher_profile_id === $profileId && $conversation->is_available_for_higher_profile)
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Determine whether the user can hide the model.
      */
     public function hide(User $user, Conversation $conversation): bool

@@ -8,11 +8,10 @@ use Illuminate\Http\Response;
 
 class ConversationController extends Controller
 {
-    public function show(Conversation $conversation)
-    {
-        $this->authorize('view', $conversation);
-
-    }
+    /*
+     * All Conversation actions will be done automatically.
+     * Only hiding should happen with user request
+     */
 
     public function hide(Conversation $conversation, ConversationService $conversationService)
     {
@@ -24,9 +23,4 @@ class ConversationController extends Controller
 
         return response()->json([], Response::HTTP_EXPECTATION_FAILED);
     }
-
-    /*
-     * All Conversation actions will be done automatically.
-     */
-
 }
