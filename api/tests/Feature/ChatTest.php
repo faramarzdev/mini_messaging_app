@@ -311,7 +311,6 @@ class ChatTest extends TestCase
             'body' => 'test',
         ])->assertStatus(Response::HTTP_CREATED);
 
-
         $response = $this->actingAs($otherUser)->getJson(route('chats.my'));
         $this->assertCount(1, $response->json('data'));
         $this->assertSame(1, $response->json('data.0.unread_count'));
@@ -333,5 +332,30 @@ class ChatTest extends TestCase
 
         $this->assertCount(1, $response->json('data'));
         $this->assertSame(0, $response->json('data.0.unread_count'));
+    }
+
+    #[Test]
+    public function sending_message_marks_the_conversation_as_read(): void
+    {
+        $other = User::factory()->create();
+
+        foreach (['first one', 'second one', 'third one'] as $body) {
+            $this->actingAs($other, 'sanctum')
+                ->postJson(route('message.store'), [
+                    'receiver_handle' => $this->profile->handle,
+                    'body' => $body,
+                ])->assertStatus(Response::HTTP_CREATED);
+        }
+
+        $before = $this->actingAs($this->user, 'sanctum')->getJson(route('chats.my'));
+        $this->assertSame(3, $before->json('data.0.unread_count'));
+
+        $this->postJson(route('message.store'), [
+            'receiver_handle' => $other->profile->handle,
+            'body' => 'my reply',
+        ])->assertStatus(Response::HTTP_CREATED);
+
+        $after = $this->getJson(route('chats.my'));
+        $this->assertSame(0, $after->json('data.0.unread_count'));
     }
 }
