@@ -338,6 +338,7 @@ class ChatTest extends TestCase
     public function sending_message_marks_the_conversation_as_read(): void
     {
         $other = User::factory()->create();
+        Event::fake([MessageSent::class]);
 
         foreach (['first one', 'second one', 'third one'] as $body) {
             $this->actingAs($other, 'sanctum')
