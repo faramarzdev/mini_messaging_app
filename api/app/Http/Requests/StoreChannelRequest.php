@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ChannelJoinModes;
 use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Validation\Rules\ProfileRules;
@@ -30,8 +31,7 @@ class StoreChannelRequest extends FormRequest
             'description' => ['nullable', 'string', 'min:5', 'max:255'],
             'visibility' => ['required', 'string', new Enum(ChannelVisibility::class)],
             'type' => ['required', 'string', new Enum(ChannelType::class)],
-            'can_join_by_link' => ['required', 'boolean'],
-            'confirm_joined' => ['required', 'boolean'],
+            'join_mode' => ['required', 'string', new Enum(ChannelJoinModes::class)],
 
             ...ProfileRules::store(),
         ];

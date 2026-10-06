@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChannelJoinModes;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
@@ -31,8 +32,7 @@ class ChannelTest extends TestCase
         'description' => null,
         'visibility' => ChannelVisibility::Public,
         'type' => ChannelType::Channel,
-        'can_join_by_link' => 1,
-        'confirm_joined' => 0,
+        'join_mode' => ChannelJoinModes::Open,
     ];
 
     #[Test]
@@ -157,7 +157,7 @@ class ChannelTest extends TestCase
     {
         $user = User::factory()->create();
         $channel = Channel::factory()->create([
-            'can_join_by_link' => true,
+            'join_mode' => ChannelJoinModes::Open,
         ]);
         $response = $this->actingAs($user, 'sanctum')
             ->postJson(
@@ -172,7 +172,7 @@ class ChannelTest extends TestCase
     {
         $user = User::factory()->create();
         $channel = Channel::factory()->create([
-            'can_join_by_link' => false,
+            'join_mode' => ChannelJoinModes::Closed,
         ]);
         $response = $this->actingAs($user, 'sanctum')
             ->postJson(
@@ -187,8 +187,7 @@ class ChannelTest extends TestCase
     {
         $user = User::factory()->create();
         $channel = Channel::factory()->create([
-            'can_join_by_link' => true,
-            'confirm_joined' => true,
+            'join_mode' => ChannelJoinModes::ApprovalNeeded,
         ]);
         $response = $this->actingAs($user, 'sanctum')
             ->postJson(

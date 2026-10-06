@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\Messageable;
+use App\Enums\ChannelJoinModes;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
@@ -26,20 +27,18 @@ class Channel extends Model implements Messageable
         'description',
         'visibility',
         'type',
-        'can_join_by_link',
-        'confirm_joined',
+        'join_mode',
         'messages_count',
         'last_message_id',
         'last_activity_at',
     ];
 
     protected $casts = [
-        'can_join_by_link' => 'boolean',
-        'confirm_joined' => 'boolean',
         'messages_count' => 'integer',
         'last_activity_at' => 'datetime',
         'type' => ChannelType::class,
         'visibility' => ChannelVisibility::class,
+        'join_mode' => ChannelJoinModes::class,
     ];
 
     public function owner(): BelongsTo
@@ -85,7 +84,7 @@ class Channel extends Model implements Messageable
     {
         return $this->allMembers()
             ->where('profile_id', $profile->id)
-            ->whereIn('status', [ChannelMemberStatus::Blocked, ChannelMemberStatus::Rejected])
+            ->whereIn('status', [ChannelMemberStatus::Blocked])
             ->exists();
     }
 
