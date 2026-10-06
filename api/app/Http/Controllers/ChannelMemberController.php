@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ChannelJoinModes;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\ChannelVisibility;
@@ -29,12 +30,25 @@ class ChannelMemberController extends Controller
 
     public function join(Request $request, Channel $channel): JsonResponse
     {
-        if (! $channel->can_join_by_link) {
-            return response()->json(['message' => 'Channel does not accept new member!'], Response::HTTP_FORBIDDEN);
+        if ($channel->join_mode == ChannelJoinModes::Closed) {
+            return response()->json(['message' => 'No new member accepted!'], Response::HTTP_FORBIDDEN);
         }
 
         $profile = $request->currentProfile();
-        if ($channel->confirm_joined) {
+        $alreadyJoinedRecord = $channel->allMembers()->where('profile_id', $profile->id)->first();
+        if ($alreadyJoinedRecord) {
+            if ($alreadyJoinedRecord->status === ChannelMemberStatus::Blocked) {
+                return response()->json(['message' => 'User is blocked!'], Response::HTTP_FORBIDDEN);
+            }
+            if ($alreadyJoinedRecord->status === ChannelMemberStatus::Approved) {
+                return response()->json(['message' => 'User is already joined!'], Response::HTTP_FORBIDDEN);
+            }
+            if ($alreadyJoinedRecord->status === ChannelMemberStatus::Pending) {
+                return response()->json(['message' => 'Join request is already sent!'], Response::HTTP_FORBIDDEN);
+            }
+        }
+
+        if ($channel->join_mode == ChannelJoinModes::ApprovalNeeded) {
             $status = ChannelMemberStatus::Pending;
         } else {
             if ($channel->visibility === ChannelVisibility::Public) {
@@ -42,6 +56,12 @@ class ChannelMemberController extends Controller
             } else {
                 $status = ChannelMemberStatus::Pending;
             }
+        }
+        if ($alreadyJoinedRecord) {
+            $alreadyJoinedRecord->status = $status;
+            $alreadyJoinedRecord->save();
+
+            return response()->json([], Response::HTTP_OK);
         }
         if ($status) {
             $channel->members()->create([
@@ -53,7 +73,7 @@ class ChannelMemberController extends Controller
             return response()->json([], Response::HTTP_OK);
         }
 
-        return response()->json(['message' => 'Channel joining stat was\'t specified!'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        return response()->json(['message' => 'Channel join mode setting has an issue.'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
     public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse

@@ -21,8 +21,7 @@ class ChannelResource extends JsonResource
             'description' => $this->description,
             'type' => $this->type,
             'visibility' => $this->visibility,
-            'can_join_by_link' => $this->can_join_by_link,
-            'confirm_joined' => $this->confirm_joined,
+            'join_mode' => $this->join_mode,
             'messages_count' => $this->messages_count,
             'created_at' => $this->created_at?->format('Y-m-d H:i'),
         ];

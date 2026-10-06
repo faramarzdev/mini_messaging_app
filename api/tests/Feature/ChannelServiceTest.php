@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChannelJoinModes;
 use App\Enums\ChannelMemberStatus;
 use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
@@ -34,8 +35,7 @@ class ChannelServiceTest extends TestCase
             'description' => null,
             'visibility' => ChannelVisibility::Public,
             'type' => ChannelType::Channel,
-            'can_join_by_link' => 1,
-            'confirm_joined' => 0,
+            'join_mode' => ChannelJoinModes::Open,
             'handle' => 'test_channel',
 
             // trying to inject unwanted data

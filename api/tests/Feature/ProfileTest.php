@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChannelJoinModes;
 use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\ProfileableTypes;
@@ -47,8 +48,7 @@ class ProfileTest extends TestCase
             'name' => 'tests',
             'visibility' => ChannelVisibility::Public,
             'type' => ChannelType::Channel,
-            'can_join_by_link' => 1,
-            'confirm_joined' => 0,
+            'join_mode' => ChannelJoinModes::Open,
         ];
 
         $response = $this->actingAs($user, 'sanctum')

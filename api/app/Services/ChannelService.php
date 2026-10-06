@@ -28,8 +28,7 @@ class ChannelService
                 'description',
                 'visibility',
                 'type',
-                'can_join_by_link',
-                'confirm_joined',
+                'join_mode',
             ];
             $channelData = Arr::only($validatedData, $allowedChannelFields);
 
