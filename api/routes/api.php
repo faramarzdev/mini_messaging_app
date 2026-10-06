@@ -46,7 +46,6 @@ Route::prefix('v1')->group(function () {
 
         Route::post('channel/{channel}/join', [ChannelMemberController::class, 'join'])->name('channel_member.join');
         Route::post('channel/{channel}/invite', [ChannelMemberController::class, 'invite'])->name('channel_member.invite');
-        Route::post('channel/{channel}/kick', [ChannelMemberController::class, 'kick'])->name('channel_member.kick');
         Route::delete('channel/{channel}/leave', [ChannelMemberController::class, 'leave'])->name('channel_member.leave');
 
         Route::post('channel/{channel}/block', [ChannelMemberController::class, 'block'])->name('channel_member.block');

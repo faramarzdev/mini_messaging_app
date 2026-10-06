@@ -93,30 +93,6 @@ class ChannelMemberController extends Controller
         return response()->json([], Response::HTTP_OK);
     }
 
-    public function kick(Request $request, Channel $channel)
-    {
-        $role = $channel->profileRole($request->currentProfile());
-        if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
-            return response()->json(['message' => 'User does not have permission!'], Response::HTTP_FORBIDDEN);
-        }
-        $validated = $request->validate([
-            'profile_id' => ['required', 'integer', 'exists:profiles,id'],
-        ]);
-        $inChannel = ChannelMember::where('profile_id', $validated['profile_id'])->where('channel_id', $channel->id);
-        if (! $inChannel->exists()) {
-            return response()->json(['message' => 'User is not a member!'], Response::HTTP_FORBIDDEN);
-        }
-        $inChannel = $inChannel->first();
-        if ($inChannel->role === ChannelRoles::Owner) {
-            return response()->json(['message' => 'Cannot kick the owner!'], Response::HTTP_FORBIDDEN);
-        }
-        $inChannel->status = ChannelMemberStatus::Blocked;
-        $inChannel->role = ChannelRoles::Member;
-        $inChannel->save();
-
-        return response()->json([], Response::HTTP_OK);
-    }
-
     public function block(Request $request, Channel $channel)
     {
         $role = $channel->profileRole($request->currentProfile());
