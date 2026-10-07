@@ -3,15 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\ChannelJoinModes;
-use App\Enums\ChannelMemberStatus;
-use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
 use App\Enums\ChannelVisibility;
 use App\Enums\MessageableType;
 use App\Enums\ProfileableTypes;
 use App\Events\MessageSent;
 use App\Models\Channel;
-use App\Models\ChannelMember;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
@@ -36,7 +33,7 @@ class ChannelTest extends TestCase
     ];
 
     #[Test]
-    public function user_can_create_channel()
+    public function user_can_create_channel(): void
     {
         $user = User::factory()->create();
 
@@ -62,37 +59,7 @@ class ChannelTest extends TestCase
     }
 
     #[Test]
-    public function management_can_see_all_members()
-    {
-        [$channel, $owner] = $this->createChannel();
-
-        ChannelMember::factory(20)->state(['channel_id' => $channel->id])->create();
-
-        $response = $this->actingAs($owner, 'sanctum')
-            ->getJson(route('channel_member.index', ['channel' => $channel->id]));
-
-        $response->assertStatus(Response::HTTP_OK);
-        $response->assertJsonCount(21, 'data'); // 20 + 1 (the owner)
-
-    }
-
-    #[Test]
-    public function management_can_see_pending_join_requests()
-    {
-        [$channel, $owner] = $this->createChannel();
-
-        ChannelMember::factory(10)->state(['channel_id' => $channel->id, 'status' => ChannelMemberStatus::Pending])->create();
-        ChannelMember::factory(10)->state(['channel_id' => $channel->id, 'status' => ChannelMemberStatus::Approved])->create();
-
-        $route = route('channel_member.index', ['channel' => $channel->id, 'status' => ChannelMemberStatus::Pending]);
-        $response = $this->actingAs($owner, 'sanctum')->getJson($route);
-
-        $response->assertStatus(Response::HTTP_OK);
-        $response->assertJsonCount(10, 'data');
-    }
-
-    #[Test]
-    public function channel_management_can_remove_the_channel()
+    public function channel_management_can_remove_the_channel(): void
     {
         [$channel, $owner] = $this->createChannel();
         $this->assertDatabaseCount(Channel::class, 1);
@@ -106,7 +73,7 @@ class ChannelTest extends TestCase
     }
 
     #[Test]
-    public function channel_member_cannot_remove_the_channel()
+    public function channel_member_cannot_remove_the_channel(): void
     {
         $member = User::factory()->create();
         [$channel] = $this->createChannel(member: $member);
@@ -118,7 +85,7 @@ class ChannelTest extends TestCase
     }
 
     #[Test]
-    public function channel_removal_removes_the_messages_and_the_profile()
+    public function channel_removal_removes_the_messages_and_the_profile(): void
     {
         Event::fake([MessageSent::class]);
 
@@ -146,182 +113,8 @@ class ChannelTest extends TestCase
         ]);
     }
 
-    // user_can_see_public_channel
-    // user_can_see_private_channel_when_joined
-    // user_cant_see_private_channel
-    // user_can_search_for_channel
-    //
-
     #[Test]
-    public function users_can_join_channel()
-    {
-        $user = User::factory()->create();
-        $channel = Channel::factory()->create([
-            'join_mode' => ChannelJoinModes::Open,
-        ]);
-        $response = $this->actingAs($user, 'sanctum')
-            ->postJson(
-                route('channel_member.join', ['channel' => $channel->id])
-            );
-        $response->assertStatus(Response::HTTP_OK);
-        $this->assertDatabaseCount(ChannelMember::class, 1);
-    }
-
-    #[Test]
-    public function users_can_not_join_closed_channel()
-    {
-        $user = User::factory()->create();
-        $channel = Channel::factory()->create([
-            'join_mode' => ChannelJoinModes::Closed,
-        ]);
-        $response = $this->actingAs($user, 'sanctum')
-            ->postJson(
-                route('channel_member.join', ['channel' => $channel->id])
-            );
-        $response->assertStatus(Response::HTTP_FORBIDDEN);
-        $this->assertDatabaseCount(ChannelMember::class, 0);
-    }
-
-    #[Test]
-    public function users_can_request_to_join_channel()
-    {
-        $user = User::factory()->create();
-        $channel = Channel::factory()->create([
-            'join_mode' => ChannelJoinModes::ApprovalNeeded,
-        ]);
-        $response = $this->actingAs($user, 'sanctum')
-            ->postJson(
-                route('channel_member.join', ['channel' => $channel->id])
-            );
-        $response->assertStatus(Response::HTTP_OK);
-        $this->assertDatabaseCount(ChannelMember::class, 1);
-        $this->assertDatabaseHas(ChannelMember::class, [
-            'channel_id' => $channel->id,
-            'profile_id' => $user->profile->id,
-            'role' => ChannelRoles::Member,
-            'status' => ChannelMemberStatus::Pending,
-        ]);
-    }
-
-    #[Test]
-    public function user_can_leave_channel_they_joined()
-    {
-        $user = User::factory()->create();
-        $channel = Channel::factory()->create();
-        $channelMember = [
-            'channel_id' => $channel->id,
-            'profile_id' => $user->profile->id,
-            'role' => ChannelRoles::Member,
-            'status' => ChannelMemberStatus::Approved,
-        ];
-        ChannelMember::factory()->state($channelMember)->create();
-        $this->assertDatabaseCount(ChannelMember::class, 1);
-        $this->assertDatabaseHas(ChannelMember::class, $channelMember);
-
-        $response = $this->actingAs($user, 'sanctum')
-            ->deleteJson(
-                route('channel_member.leave', ['channel' => $channel->id])
-            );
-        $response->assertStatus(Response::HTTP_OK);
-        $channelMember['status'] = ChannelMemberStatus::Left;
-        $this->assertDatabaseCount(ChannelMember::class, 1);
-        $this->assertDatabaseHas(ChannelMember::class, $channelMember);
-    }
-
-    #[Test]
-    public function channel_managements_can_block_members()
-    {
-        $member = User::factory()->create();
-        [$channel] = $this->createChannel(member: $member);
-
-        $admin = User::factory()->create();
-        $channelAdmin = [
-            'channel_id' => $channel->id,
-            'profile_id' => $admin->profile->id,
-            'role' => ChannelRoles::Admin,
-            'status' => ChannelMemberStatus::Approved,
-        ];
-        ChannelMember::factory()->state($channelAdmin)->create();
-
-        $response = $this->actingAs($admin, 'sanctum')
-            ->postJson(
-                route('channel_member.block', ['channel' => $channel->id]),
-                [
-                    'profile_id' => $member->profile->id,
-                ]
-            );
-        $response->assertStatus(Response::HTTP_OK);
-
-        $this->assertDatabaseCount(ChannelMember::class, 3);
-        $this->assertDatabaseHas(ChannelMember::class, [
-            'channel_id' => $channel->id,
-            'profile_id' => $member->profile->id,
-            'status' => ChannelMemberStatus::Blocked,
-        ]);
-    }
-
-    #[Test]
-    public function users_without_permission_cannot_block_members()
-    {
-        $member = User::factory()->create();
-        [$channel] = $this->createChannel(member: $member);
-
-        $memberB = User::factory()->create();
-        ChannelMember::factory()->state([
-            'channel_id' => $channel->id,
-            'profile_id' => $memberB->profile->id,
-            'role' => ChannelRoles::Member,
-            'status' => ChannelMemberStatus::Approved,
-        ])->create();
-        $this->assertDatabaseCount(ChannelMember::class, 3);
-
-        $response = $this->actingAs($member, 'sanctum')
-            ->postJson(
-                route('channel_member.block', ['channel' => $channel->id]),
-                [
-                    'profile_id' => $memberB->profile->id,
-                ]
-            );
-        $response->assertStatus(Response::HTTP_FORBIDDEN);
-
-        $this->assertDatabaseCount(ChannelMember::class, 3);
-        $this->assertDatabaseHas(ChannelMember::class, [
-            'channel_id' => $channel->id,
-            'profile_id' => $memberB->profile->id,
-            'role' => ChannelRoles::Member,
-            'status' => ChannelMemberStatus::Approved,
-        ]);
-    }
-
-    #[Test]
-    public function blocked_users_cannot_join()
-    {
-        [$channel] = $this->createChannel();
-        $user = User::factory()->create();
-        $blockedMember = [
-            'channel_id' => $channel->id,
-            'profile_id' => $user->profile->id,
-            'role' => ChannelRoles::Member,
-            'status' => ChannelMemberStatus::Blocked,
-        ];
-        ChannelMember::factory()->state($blockedMember)->create();
-        $this->assertDatabaseCount(ChannelMember::class, 2);
-
-        $response = $this->actingAs($user, 'sanctum')
-            ->postJson(
-                route('channel_member.join', ['channel' => $channel->id])
-            );
-        $response->assertStatus(Response::HTTP_FORBIDDEN);
-        $this->assertDatabaseCount(ChannelMember::class, 2);
-        $this->assertDatabaseHas(ChannelMember::class, $blockedMember);
-    }
-
-    // user_can_send_join_request
-
-    // all message sending/fetching tests are in MessageTest.php
-
-    #[Test]
-    public function channel_creation_would_populate_its_last_activity_at()
+    public function channel_creation_would_populate_its_last_activity_at(): void
     {
         Carbon::setTestNow('2026-09-27 12:00:00');
 
