@@ -51,12 +51,18 @@ class Channel extends Model implements Messageable
         return $this->morphOne(Profile::class, 'profileable');
     }
 
+    /**
+     * @return HasMany filter allMembers() by their status to only invited and approved
+     */
     public function members(): HasMany
     {
-        return $this->hasMany(ChannelMember::class, 'channel_id')
+        return $this->allMembers()
             ->whereIn('status', [ChannelMemberStatus::Approved, ChannelMemberStatus::Invited]);
     }
 
+    /**
+     * @return HasMany all ChannelMember with no filtering
+     */
     public function allMembers(): HasMany
     {
         return $this->hasMany(ChannelMember::class, 'channel_id');
@@ -91,6 +97,11 @@ class Channel extends Model implements Messageable
     public function isMember(Profile $profile): bool
     {
         return $this->members()->where('profile_id', $profile->id)->exists();
+    }
+
+    public function hasManagementPermission(Profile $currentProfile): bool
+    {
+        return in_array($this->profileRole($currentProfile), [ChannelRoles::Owner, ChannelRoles::Admin]);
     }
 
     public static function create(array $attributes = [])

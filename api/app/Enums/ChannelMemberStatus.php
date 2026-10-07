@@ -2,23 +2,31 @@
 
 namespace App\Enums;
 
+/**
+ * Who may see and send on Channel entities (groups, channels):
+ * Public groups: only Blocked is denied.
+ * Private: only Approved and Invited.
+ */
 enum ChannelMemberStatus: string
 {
-    case Approved = 'approved';         // became a member
+    /** Already became a member: can see and send  */
+    case Approved = 'approved';
 
-    case Pending = 'pending';           // user sent a join request (private channels) --> can either be approved or blocked
+    /**  member left the channel: cannot see and send on private but can see and send on public */
+    case Left = 'left';
 
-    case Blocked = 'blocked';           // blocked member , channel managers can block user to not see and send
+    /** member or request is blocked: cannot see and cannot send */
+    case Blocked = 'blocked';
 
-    case Invited = 'invited';           // channel managers added the user, should be changed to approved or left over a specific period
+    /**
+     * sent a request to join: cannot see and send on private but can see and send on public
+     *   request can either be approved or blocked (by channel managers)
+     */
+    case Pending = 'pending';
 
-    case Left = 'left';                 // member left the channel
+    /**
+     * user invited by channel managers: can see and send
+     *     will be changed to approved or left after some time
+     */
+    case Invited = 'invited';
 }
-
-/*
- Approved, can interact   , see and send
- Pending, cannot interact , no see and no send
- Blocked, cannot interact , no see and no send
- Invited, can interact    , see and send
- Left, can interact on public but not on private, see and send on public no see or send on private
- */
