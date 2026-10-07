@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\ChannelMemberStatus;
+use App\Enums\ChannelRoles;
 use App\Enums\ChannelType;
 use App\Events\UserTyping;
 use App\Models\Channel;
+use App\Models\ChannelMember;
 use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Response;
@@ -17,7 +19,7 @@ use Tests\TestCase;
 
 class UserTypingTest extends TestCase
 {
-    use CreatesConversations, CreatesChannels;
+    use CreatesChannels, CreatesConversations;
 
     protected function setUp(): void
     {
@@ -26,7 +28,7 @@ class UserTypingTest extends TestCase
     }
 
     #[Test]
-    public function authenticated_user_can_trigger_typing_on_conversation()
+    public function authenticated_user_can_trigger_typing_on_conversation(): void
     {
 
         $sender = User::factory()->create();
@@ -46,7 +48,7 @@ class UserTypingTest extends TestCase
     }
 
     #[Test]
-    public function user_cannot_trigger_typing_on_others_conversation()
+    public function user_cannot_trigger_typing_on_others_conversation(): void
     {
 
         $user = User::factory()->create();
@@ -63,7 +65,7 @@ class UserTypingTest extends TestCase
     }
 
     #[Test]
-    public function guest_cannot_trigger_typing_on_conversation()
+    public function guest_cannot_trigger_typing_on_conversation(): void
     {
 
         $conversation = Conversation::factory()->create();
@@ -75,7 +77,7 @@ class UserTypingTest extends TestCase
     }
 
     #[Test]
-    public function authenticated_user_can_trigger_typing_on_group()
+    public function authenticated_user_can_trigger_typing_on_group(): void
     {
 
         $member = User::factory()->create();
@@ -98,7 +100,7 @@ class UserTypingTest extends TestCase
     }
 
     #[Test]
-    public function not_members_cannot_trigger_typing_on_group()
+    public function not_members_cannot_trigger_typing_on_group(): void
     {
 
         $user = User::factory()->create();
@@ -117,7 +119,31 @@ class UserTypingTest extends TestCase
     }
 
     #[Test]
-    public function guest_cannot_trigger_typing_on_group()
+    public function blocked_members_cannot_trigger_typing_on_group(): void
+    {
+        $group = Channel::factory()->create([
+            'type' => ChannelType::Group,
+        ]);
+        $user = User::factory()->create();
+        $blockedMember = [
+            'channel_id' => $group->id,
+            'profile_id' => $user->profile->id,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Blocked,
+        ];
+        ChannelMember::factory()->state($blockedMember)->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson(route('user.typing'), [
+                'channel_id' => $group->id,
+            ])
+            ->assertStatus(Response::HTTP_FORBIDDEN);
+
+        Event::assertNotDispatched(UserTyping::class);
+    }
+
+    #[Test]
+    public function guest_cannot_trigger_typing_on_group(): void
     {
 
         $group = Channel::factory()->create([
@@ -145,7 +171,6 @@ class UserTypingTest extends TestCase
             return $event->typer->relationLoaded('profileable');
         });
     }
-
 
     #[Test]
     public function members_cannot_trigger_typing_on_broadcast_channels(): void
