@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\ChannelRoles;
 use App\Enums\ChannelVisibility;
 use App\Enums\MessageableType;
 use App\Enums\ProfileableTypes;
@@ -67,13 +66,18 @@ class MessagePolicy
             return true;
 
         } elseif ($profile->profileable_type === ProfileableTypes::Channel) {
-            // channel (and channel types, including group amd channel)
+            // channel (group and channel)
             $channel = $profile->profileable;
+
             if ($channel->visibility == ChannelVisibility::Public) {
                 return ! $channel->isProfileBlocked($viewerProfile);
-            } elseif ($channel->isMember($viewerProfile)) {
-                return true;
+
+            } else { // private channels
+                if ($channel->isMember($viewerProfile)) {
+                    return true;
+                }
             }
+
         }
 
         return false;
@@ -137,13 +141,13 @@ class MessagePolicy
      */
     public function delete(User $user, Message $message): bool
     {
-        $profileId = $user->profile?->id;
-        if (! $profileId) {
+        $currentProfile = $user->profile;
+        if (! $currentProfile?->id) {
             return false;
         }
         if ($message->messageable instanceof Conversation) {
             if (
-                $profileId === $message->sender_id &&
+                $currentProfile->id === $message->sender_id &&
                 $message->is_available_on_sender &&
                 ! $message->is_read
             ) {
@@ -152,35 +156,16 @@ class MessagePolicy
         } elseif ($message->messageable instanceof Channel) {
             // channel and group
             // the sender itself
-            if ($profileId === $message->sender_id) {
+            if ($currentProfile->id === $message->sender_id) {
                 return true;
             }
             // the channel/group managements
-            $profileInChannel = ChannelMember::where('channel_id', $message->messageable_id)->where('profile_id', $profileId)->first();
-            if ($profileInChannel) {
-                $userRole = $profileInChannel->role;
-                if (in_array($userRole, [ChannelRoles::Owner, ChannelRoles::Admin])) {
-                    return true;
-                }
+            $channel = $message->messageable;
+            if ($channel->hasManagementPermission($currentProfile)) {
+                return true;
             }
         }
 
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Message $message): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Message $message): bool
-    {
         return false;
     }
 
