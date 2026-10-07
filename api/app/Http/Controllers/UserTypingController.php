@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\ChannelType;
 use App\Events\UserTyping;
 use App\Models\Channel;
-use App\Models\ChannelMember;
 use App\Models\Conversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,11 +25,15 @@ class UserTypingController extends Controller
                 Rule::exists(Channel::class, 'id'),
             ],
         ]);
-        if (! $request->conversation_id && ! $request->channel_id) {
+        if (
+            (! $request->conversation_id && ! $request->channel_id) ||
+            ($request->conversation_id && $request->channel_id)
+        ) {
             return response()->json([], Response::HTTP_BAD_REQUEST);
         }
 
         $writer = $request->currentProfile();
+        // if currentProfile changed to accept other entities, the following setRelation gets invalidated
         $writer->setRelation('profileable', $request->user());
 
         $messageable = null;
@@ -39,13 +42,10 @@ class UserTypingController extends Controller
             if (in_array($writer->id, $conversation->connectedProfilesIds())) {
                 $messageable = $conversation;
             }
-        } else {
+        } elseif ($request->channel_id) {
             $channel = Channel::find($request->channel_id);
-            if ($channel?->type !== ChannelType::Channel) {
-                $isMember = ChannelMember::where('channel_id', $request->channel_id)->where('profile_id', $writer->id)->first();
-                if ($isMember) {
-                    $messageable = $channel;
-                }
+            if ($channel->type !== ChannelType::Channel && $channel->isMember($writer)) {
+                $messageable = $channel;
             }
         }
 
