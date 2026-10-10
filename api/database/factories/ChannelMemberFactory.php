@@ -13,19 +13,14 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ChannelMemberFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            'channel_id' => Channel::factory(),
-            'profile_id' => User::factory()->create()->profile->id,
+            'channel_id' => fn () => Channel::factory(),
+            'profile_id' => fn () => User::factory()->create()->profile->id,
             'last_read_message_id' => null,
             'role' => ChannelRoles::Member,
-            'status' => fake()->randomElement(ChannelMemberStatus::cases()),
+            'status' => ChannelMemberStatus::Approved,
         ];
     }
 }
