@@ -4,9 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\MessageableType;
 use App\Enums\MessageType;
-use App\Enums\ProfileableTypes;
 use App\Models\Conversation;
-use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,48 +13,29 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MessageFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        if ($this->state['sender_id'] ?? false) {
-            $sender_id = $this->state['sender_id'];
-        } else {
-            $user = User::factory()->create();
-            $sender = Profile::where('profileable_type', ProfileableTypes::User)
-                ->where('profileable_id', $user->id)->first();
-            $sender_id = $sender->id;
-        }
-
-        if ($this->state['receiver_handle'] ?? false) {
-            $receiver_handle = $this->state['receiver_handle'];
-        } else {
-            $user = User::factory()->create();
-            $receiver = Profile::where('profileable_type', ProfileableTypes::User)
-                ->where('profileable_id', $user->id)->first();
-            $receiver_handle = $receiver->id;
-        }
-
-        [$lowerId, $higherId] = Conversation::normalizeProfiles(
-            $sender_id,
-            $receiver_handle
-        );
-
         return [
-            'sender_id' => $sender_id,
+            'sender_id' => fn () => User::factory()->create()->profile->id,   // must stay above messageable_id
             'is_available_on_sender' => true,
             'is_available_on_receiver' => true,
             'body' => fake()->paragraph(),
-            'type' => MessageType::Text->value,
+            'type' => MessageType::Text,
             'is_read' => false,
             'messageable_type' => MessageableType::Conversation,
-            'messageable_id' => Conversation::factory()->state([
-                'lower_profile_id' => $lowerId,
-                'higher_profile_id' => $higherId,
-            ]),
+            // runs only when the caller did not pass messageable_id
+            'messageable_id' => fn (array $attributes) => $this->conversationFor($attributes['sender_id']),
         ];
+    }
+
+    private function conversationFor(int $senderProfileId): int
+    {
+        $otherProfileId = User::factory()->create()->profile->id;
+        [$lower, $higher] = Conversation::normalizeProfiles($senderProfileId, $otherProfileId);
+
+        return Conversation::factory()->create([
+            'lower_profile_id' => $lower,
+            'higher_profile_id' => $higher,
+        ])->id;
     }
 }
