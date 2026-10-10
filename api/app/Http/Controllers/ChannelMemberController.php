@@ -76,7 +76,7 @@ class ChannelMemberController extends Controller
         return response()->json(['message' => 'Channel join mode setting has an issue.'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse
+    /*public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse
     {
         $role = $channel->profileRole($request->currentProfile());
         if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
@@ -90,7 +90,7 @@ class ChannelMemberController extends Controller
         ]);
 
         return response()->json([], Response::HTTP_OK);
-    }
+    }*/
 
     public function leave(Request $request, Channel $channel)
     {
