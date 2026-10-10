@@ -41,10 +41,10 @@ class ChannelMemberController extends Controller
                 return response()->json(['message' => 'User is blocked!'], Response::HTTP_FORBIDDEN);
             }
             if ($alreadyJoinedRecord->status === ChannelMemberStatus::Approved) {
-                return response()->json(['message' => 'User is already joined!'], Response::HTTP_FORBIDDEN);
+                return response()->json(['message' => 'User is already joined!'], Response::HTTP_CONFLICT);
             }
             if ($alreadyJoinedRecord->status === ChannelMemberStatus::Pending) {
-                return response()->json(['message' => 'Join request is already sent!'], Response::HTTP_FORBIDDEN);
+                return response()->json(['message' => 'Join request is already sent!'], Response::HTTP_CONFLICT);
             }
         }
 
