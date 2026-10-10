@@ -19,7 +19,6 @@ use App\Services\MessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 
 class MessageController extends Controller
 {
@@ -70,18 +69,14 @@ class MessageController extends Controller
 
         $message = $messageService->send($senderProfile, $messageable, $validated);
 
-        if ($message) {
-            // the message is already sent so the event handle shouldn't change the return
-            try {
-                MessageSent::dispatch($message);
-            } catch (\Throwable $e) {
-                Log::error($e);
-            }
-
-            return response()->json(new MessageResource($message), Response::HTTP_CREATED);
-        } else {
-            return response()->json([], Response::HTTP_INTERNAL_SERVER_ERROR);
+        // the message is already sent so the event handle shouldn't change the return
+        try {
+            MessageSent::dispatch($message);
+        } catch (\Throwable $e) {
+            report($e);
         }
+
+        return response()->json(new MessageResource($message), Response::HTTP_CREATED);
     }
 
     /**

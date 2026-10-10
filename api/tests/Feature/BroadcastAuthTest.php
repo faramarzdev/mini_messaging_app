@@ -10,10 +10,13 @@ use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Response;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesChannels;
 use Tests\TestCase;
 
 class BroadcastAuthTest extends TestCase
 {
+    use CreatesChannels;
+
     #[Test]
     public function conversation_participant_can_subscribe_to_their_conversation_channel(): void
     {
@@ -43,7 +46,7 @@ class BroadcastAuthTest extends TestCase
         $response = $this->actingAs($impersonator, 'sanctum')
             ->postJson('/broadcasting/auth', [
                 'channel_name' => 'private-conversation.'.$conversation->id,
-                'socket_id' => '123456.654321', // fake socket ID
+                'socket_id' => '123456.654321',
             ]);
 
         $response->assertStatus(Response::HTTP_FORBIDDEN);
@@ -63,7 +66,27 @@ class BroadcastAuthTest extends TestCase
         $response = $this->actingAs($member, 'sanctum')
             ->postJson('/broadcasting/auth', [
                 'channel_name' => 'private-channel.'.$channel->id,
-                'socket_id' => '123456.654321', // fake socket ID
+                'socket_id' => '123456.654321',
+            ]);
+
+        $response->assertStatus(Response::HTTP_OK);
+    }
+
+    #[Test]
+    public function invited_member_can_subscribe_to_channel_broadcast(): void
+    {
+        $member = User::factory()->create();
+        [$channel] = $this->createChannel();
+        ChannelMember::factory()->create([
+            'channel_id' => $channel->id,
+            'profile_id' => $member->profile?->id,
+            'status' => ChannelMemberStatus::Invited,
+        ]);
+
+        $response = $this->actingAs($member, 'sanctum')
+            ->postJson('/broadcasting/auth', [
+                'channel_name' => 'private-channel.'.$channel->id,
+                'socket_id' => '123456.654321',
             ]);
 
         $response->assertStatus(Response::HTTP_OK);
@@ -78,7 +101,7 @@ class BroadcastAuthTest extends TestCase
         $response = $this->actingAs($user, 'sanctum')
             ->postJson('/broadcasting/auth', [
                 'channel_name' => 'private-channel.'.$channel->id,
-                'socket_id' => '123456.654321', // fake socket ID
+                'socket_id' => '123456.654321',
             ]);
 
         $response->assertStatus(Response::HTTP_FORBIDDEN);

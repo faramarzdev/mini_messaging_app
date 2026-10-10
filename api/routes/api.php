@@ -45,10 +45,12 @@ Route::prefix('v1')->group(function () {
         Route::get('channel/{channel}/members', [ChannelMemberController::class, 'index'])->name('channel_member.index');
 
         Route::post('channel/{channel}/join', [ChannelMemberController::class, 'join'])->name('channel_member.join');
-        Route::post('channel/{channel}/invite', [ChannelMemberController::class, 'invite'])->name('channel_member.invite');
         Route::delete('channel/{channel}/leave', [ChannelMemberController::class, 'leave'])->name('channel_member.leave');
-
         Route::post('channel/{channel}/block', [ChannelMemberController::class, 'block'])->name('channel_member.block');
+
+        // invite needs a complete new work flow with its own table to report and more, will be implemented later
+        // write tests when uncommenting
+        // Route::post('channel/{channel}/invite', [ChannelMemberController::class, 'invite'])->name('channel_member.invite');
 
         Route::resource('message', MessageController::class)
             ->only(['store', 'update']);

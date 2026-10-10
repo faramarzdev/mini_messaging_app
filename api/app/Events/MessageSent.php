@@ -39,8 +39,6 @@ class MessageSent implements ShouldBroadcast
                 new PrivateChannel('conversation.'.$this->message->messageable_id),
             ];
         }
-
-        return [];
     }
 
     public function broadcastWith(): array

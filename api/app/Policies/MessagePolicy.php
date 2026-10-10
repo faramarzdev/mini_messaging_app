@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\ChannelVisibility;
-use App\Enums\MessageableType;
 use App\Enums\ProfileableTypes;
 use App\Models\Channel;
 use App\Models\ChannelMember;
@@ -14,46 +13,6 @@ use App\Models\User;
 
 class MessagePolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Message $message): bool
-    {
-        $profileId = $user->profile?->id;
-        if (! $profileId) {
-            return false;
-        }
-
-        if ($message->messageable_type === MessageableType::Conversation) {
-            if (
-                ($message->sender_id === $profileId && $message->is_available_on_sender) ||
-                ($message->is_available_on_receiver && in_array($profileId, $message->messageable->connectedProfilesIds))
-            ) {
-                return true;
-            }
-
-        } elseif ($message->messageable_type === MessageableType::Channel) {
-            $channel = Channel::where('id', $message->messageable_id)->first();
-            if ($channel) {
-                if ($channel->visibility == ChannelVisibility::Public) {
-                    return true;
-                } elseif (in_array($profileId, $channel->members->pluck('id')->toArray())) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     public function viewMessages(User $user, Profile $profile): bool
     {
         $viewerProfile = $user->profile;

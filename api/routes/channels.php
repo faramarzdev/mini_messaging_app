@@ -35,6 +35,6 @@ Broadcast::channel('channel.{channelId}', function ($user, $channelId) {
 
     return ChannelMember::where('channel_id', $channelId)
         ->where('profile_id', $profileId)
-        ->where('status', ChannelMemberStatus::Approved)
+        ->whereIn('status', [ChannelMemberStatus::Approved, ChannelMemberStatus::Invited])
         ->exists();
 });

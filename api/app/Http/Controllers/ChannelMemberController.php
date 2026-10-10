@@ -41,10 +41,10 @@ class ChannelMemberController extends Controller
                 return response()->json(['message' => 'User is blocked!'], Response::HTTP_FORBIDDEN);
             }
             if ($alreadyJoinedRecord->status === ChannelMemberStatus::Approved) {
-                return response()->json(['message' => 'User is already joined!'], Response::HTTP_FORBIDDEN);
+                return response()->json(['message' => 'User is already joined!'], Response::HTTP_CONFLICT);
             }
             if ($alreadyJoinedRecord->status === ChannelMemberStatus::Pending) {
-                return response()->json(['message' => 'Join request is already sent!'], Response::HTTP_FORBIDDEN);
+                return response()->json(['message' => 'Join request is already sent!'], Response::HTTP_CONFLICT);
             }
         }
 
@@ -76,7 +76,7 @@ class ChannelMemberController extends Controller
         return response()->json(['message' => 'Channel join mode setting has an issue.'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse
+    /*public function invite(ChannelMemberInviteRequest $request, Channel $channel): JsonResponse
     {
         $role = $channel->profileRole($request->currentProfile());
         if (! $role || ! in_array($role, [ChannelRoles::Owner, ChannelRoles::Admin])) {
@@ -90,7 +90,7 @@ class ChannelMemberController extends Controller
         ]);
 
         return response()->json([], Response::HTTP_OK);
-    }
+    }*/
 
     public function leave(Request $request, Channel $channel)
     {

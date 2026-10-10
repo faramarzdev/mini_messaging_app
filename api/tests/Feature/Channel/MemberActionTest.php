@@ -26,7 +26,7 @@ class MemberActionTest extends ChannelTestCase
         $response = $this->postJson(
             route('channel_member.join', ['channel' => $channel->id])
         );
-        $response->assertStatus(Response::HTTP_FORBIDDEN);
+        $response->assertStatus(Response::HTTP_CONFLICT);
         $this->assertDatabaseCount(ChannelMember::class, 2); // owner + this member
     }
 
@@ -123,6 +123,60 @@ class MemberActionTest extends ChannelTestCase
             'status' => ChannelMemberStatus::Left,
         ]);
     }
+
+    #[Test]
+    public function left_member_can_join_again_public_without_approval(): void
+    {
+        [$channel] = $this->createChannel();
+        $channelMember = [
+            'channel_id' => $channel->id,
+            'profile_id' => $this->user->profile->id,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Left,
+        ];
+        ChannelMember::factory()->state($channelMember)->create();
+        $this->assertDatabaseCount(ChannelMember::class, 2);
+        $this->assertDatabaseHas(ChannelMember::class, $channelMember);
+
+        $response = $this->postJson(
+            route('channel_member.join', ['channel' => $channel->id])
+        );
+        $response->assertStatus(Response::HTTP_OK);
+
+        $channelMember['status'] = ChannelMemberStatus::Approved;
+        $this->assertDatabaseCount(ChannelMember::class, 2);
+        $this->assertDatabaseHas(ChannelMember::class, $channelMember);
+    }
+
+    #[Test]
+    public function no_more_than_one_join_request_can_be_sent(): void
+    {
+        [$channel] = $this->createChannel(channelVisibility: ChannelVisibility::Private);
+        $channelMember = [
+            'channel_id' => $channel->id,
+            'profile_id' => $this->user->profile->id,
+            'role' => ChannelRoles::Member,
+            'status' => ChannelMemberStatus::Pending,
+        ];
+        ChannelMember::factory()->state($channelMember)->create();
+        $this->assertDatabaseCount(ChannelMember::class, 2);
+        $this->assertDatabaseHas(ChannelMember::class, $channelMember);
+
+        $response = $this->postJson(
+            route('channel_member.join', ['channel' => $channel->id])
+        );
+        $response->assertStatus(Response::HTTP_CONFLICT);
+
+        $this->assertDatabaseCount(ChannelMember::class, 2);
+        $this->assertDatabaseHas(ChannelMember::class, $channelMember);
+
+    }
+
+    // Todo: write these when implementing the invite
+    // invited_user_join_request_would_be_handled_correcly
+    // invited_user_can_accept_and_join_the_channel
+    // invited_user_can_reject_the_channel_invitation
+    // invited_user_can_reject_and_report_the_channel_invitation
 
     #[Test]
     #[DataProvider('accessMatrix')]
